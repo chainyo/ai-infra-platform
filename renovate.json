@@ -14,6 +14,14 @@
       "matchManagers": ["terraform"],
       "groupName": "terraform providers",
       "automerge": false
+    },
+    {
+      "matchManagers": ["regex"],
+      "fileMatch": ["^script/bootstrap-cluster\\.sh$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+) registryUrl=(?<registryUrl>[^\\s]+)\\nARGOCD_CHART_VERSION=\"(?<currentValue>[^\"]+)\""
+      ],
+      "automerge": false
     }
   ]
 }
