@@ -12,8 +12,43 @@ expanded as platform modules are implemented.
 
 - Admin workstation set up: see [workstation-setup.md](./workstation-setup.md)
 - A Hetzner Cloud account and project
-- A Hetzner Object Storage bucket named `terraform-state-ai-infra` in region
-  `fsn1` (create once, before your first `terraform init`)
+
+---
+
+## Layer 0 — Bootstrap the Terraform state bucket
+
+This is a **one-time, account-level step.** It creates the Hetzner Object
+Storage bucket that all other Terraform modules use as their remote state
+backend. Skip if the bucket already exists.
+
+### 0.1 Set storage credentials
+
+```sh
+# Hetzner Object Storage keys
+# console.hetzner.cloud → Object Storage → Access Keys → Generate key
+export AWS_ACCESS_KEY_ID="<your-object-storage-access-key>"
+export AWS_SECRET_ACCESS_KEY="<your-object-storage-secret-key>"
+```
+
+### 0.2 Apply the bootstrap config
+
+```sh
+cd terraform/bootstrap/hetzner
+
+terraform init
+terraform apply
+```
+
+This creates a bucket named `terraform-state-ai-infra` in `fsn1` with
+versioning enabled. The state for this config is stored locally in
+`terraform.tfstate` — keep it, or re-apply idempotently if lost.
+
+Expected output:
+
+```
+bucket_name = "terraform-state-ai-infra"
+endpoint    = "https://fsn1.your-objectstorage.com"
+```
 
 ---
 
@@ -137,6 +172,38 @@ Platform verification passed.
 
 ---
 
+## Using Sealed Secrets
+
+Once the cluster is up and ArgoCD has synced, the Sealed Secrets controller
+runs in `kube-system` and is ready to use.
+
+### Encrypt a secret
+
+```sh
+# Fetch the cluster's public key (one-time, or after key rotation)
+kubeseal --fetch-cert \
+  --controller-name=sealed-secrets \
+  --controller-namespace=kube-system \
+  > pub-cert.pem
+
+# Encrypt a plain Secret manifest
+kubeseal --cert pub-cert.pem \
+  --format yaml \
+  -f my-secret.yaml \
+  -w my-sealed-secret.yaml
+```
+
+Commit `my-sealed-secret.yaml` — it is safe to store in git. Never commit
+`my-secret.yaml`.
+
+### Decrypt (cluster-side only)
+
+The controller decrypts `SealedSecret` resources automatically when they are
+applied. The resulting `Secret` has the same name and namespace as declared in
+the `SealedSecret`.
+
+---
+
 ## Layer 3 — Platform modules
 
 > [!NOTE]
@@ -232,7 +299,8 @@ the `terraform-state-ai-infra` bucket.
 echo $AWS_ACCESS_KEY_ID && echo $AWS_SECRET_ACCESS_KEY  # must be non-empty
 ```
 
-Re-export and retry.
+Re-export and retry. This applies to both Layer 0 (bootstrap) and Layer 1
+(hetzner-k3s) — both modules read the same environment variables.
 
 ### Node shows `NotReady` after apply
 

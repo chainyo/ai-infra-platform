@@ -1,3 +1,10 @@
+# Secrets — plain (unencrypted) Secret manifests must never be committed.
+# Use kubeseal to produce a SealedSecret, then commit that instead.
+*secret.yaml
+*secret.yml
+!*sealed-secret.yaml
+!*sealed-secret.yml
+
 # Terraform
 .terraform/
 .terraform.lock.hcl
