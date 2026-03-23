@@ -1,0 +1,45 @@
+# hetzner-k3s.tfvars.example
+# Reference configuration for the hetzner-k3s Terraform module.
+#
+# Usage:
+#   cp terraform/examples/hetzner-k3s.tfvars.example terraform/examples/hetzner-k3s.tfvars
+#   # Edit hetzner-k3s.tfvars with your values
+#   export HCLOUD_TOKEN="your_hetzner_api_token"   # secret — never in this file
+#   cd terraform/modules/hetzner-k3s
+#   terraform init
+#   terraform apply -var-file=../../examples/hetzner-k3s.tfvars
+
+# ─── Required ─────────────────────────────────────────────────────────────────
+
+# Name for the server and cluster. Appears as the server name in the Hetzner Cloud console
+# and is used as a prefix for associated resources (e.g. SSH key).
+cluster_name = "ai-infra-dev"
+
+# Hetzner datacenter region.
+# Available options: nbg1 (Nuremberg, DE), fsn1 (Falkenstein, DE),
+#                    hel1 (Helsinki, FI), ash (Ashburn, US), sin (Singapore, SG)
+location = "hel1"
+
+# SSH public key deployed to the server for post-provision access.
+# This key is used to retrieve the kubeconfig after provisioning.
+# Run: cat ~/.ssh/id_rsa.pub   (or your preferred key)
+ssh_public_key = "ssh-ed25519 AAAA... your-email@example.com"
+
+# ─── Optional (defaults shown) ────────────────────────────────────────────────
+
+# Hetzner server type. CX23 (2 vCPU, 4 GB RAM, 40 GB SSD) is the recommended
+# default for dev and CI clusters. Upgrade for heavier workloads:
+#   CX33 — 4 vCPU, 8 GB RAM   (4× the RAM, good for multiple platform modules)
+#   CX43 — 8 vCPU, 16 GB RAM  (AI workloads without GPU)
+#   CX53 — 16 vCPU, 32 GB RAM (large multi-tenant clusters)
+server_type = "cx23"
+
+# Path to the SSH private key on this machine. Used by Terraform to connect to
+# the server after provisioning and retrieve the kubeconfig output.
+# Change only if your private key lives at a non-default path.
+ssh_private_key_path = "~/.ssh/id_rsa"
+
+# k3s version to install. Leave empty to always pull the latest stable release.
+# Pin to a specific version in long-lived or production clusters to prevent
+# unintended upgrades on re-apply (e.g. "v1.29.2+k3s1").
+k3s_version = ""
