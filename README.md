@@ -3,11 +3,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/actions/workflow/status/your-username/ai-infra-platform/smoke-test.yaml?label=smoke%20test&style=flat-square&color=1D9E75" alt="CI"/>
-  <img src="https://img.shields.io/github/actions/workflow/status/your-username/ai-infra-platform/lint.yaml?label=lint&style=flat-square&color=185FA5" alt="Lint"/>
-  <img src="https://img.shields.io/github/actions/workflow/status/your-username/ai-infra-platform/security-scan.yaml?label=security&style=flat-square&color=534AB7" alt="Security"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/your-username/ai-infra-platform/infra-smoke-test.yaml?label=smoke%20test&style=flat-square&color=1D9E75" alt="Infra Smoke Test"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/your-username/ai-infra-platform/pr-validation.yaml?label=pr%20validation&style=flat-square&color=185FA5" alt="PR Validation"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/your-username/ai-infra-platform/dependency-review.yaml?label=dependency%20review&style=flat-square&color=534AB7" alt="Dependency Review"/>
   <img src="https://img.shields.io/badge/kubernetes-1.29%2B-326CE5?style=flat-square&logo=kubernetes&logoColor=white" alt="Kubernetes"/>
-  <img src="https://img.shields.io/badge/terraform-1.7%2B-7B42BC?style=flat-square&logo=terraform&logoColor=white" alt="Terraform"/>
+  <img src="https://img.shields.io/badge/terraform-1.5%2B-7B42BC?style=flat-square&logo=terraform&logoColor=white" alt="Terraform"/>
   <img src="https://img.shields.io/badge/argocd-2.10%2B-EF7B4D?style=flat-square&logo=argo&logoColor=white" alt="ArgoCD"/>
 </p>
 
@@ -222,15 +222,16 @@ Useful for demo environments — spin up before a call, destroy after.
 
 ## CI
 
-Every push to `main` runs three workflows:
+Four GitHub Actions workflows cover the full platform lifecycle:
 
-| Workflow | What it does |
-|----------|-------------|
-| `lint.yaml` | `helm lint`, `kustomize build`, `terraform validate` across all modules |
-| `smoke-test.yaml` | Provisions a real Hetzner CX22, deploys core platform modules, runs `verify-platform.sh`, destroys |
-| `security-scan.yaml` | Trivy + Checkov scan across all Terraform and Kubernetes manifests |
+| Workflow | Trigger | What it does |
+|---|---|---|
+| [`pr-validation`](.github/workflows/pr-validation.yaml) | PR open / sync | `terraform fmt`, `validate`, `plan` (Layer 1); `yamllint`; `shellcheck` |
+| [`infra-smoke-test`](.github/workflows/infra-smoke-test.yaml) | Daily 03:00 UTC | Provisions a real Hetzner cluster, bootstraps platform, verifies, destroys |
+| [`deploy`](.github/workflows/deploy.yaml) | Manual + semver tag | Applies Layer 1 Terraform and bootstraps a named cluster |
+| [`dependency-review`](.github/workflows/dependency-review.yaml) | PR open / sync | Audits CVEs and action pin integrity |
 
-The smoke test runs against a real cluster on every push. If the badge is green, the platform deploys.
+If the smoke-test badge is green, the Terraform layer provisions correctly. See the [runbooks](docs/runbooks/) for operating and debugging each workflow.
 
 ---
 

@@ -1,0 +1,13 @@
+---
+extends: default
+rules:
+  line-length:
+    max: 120
+  indentation:
+    spaces: 2
+  trailing-spaces: enable
+  new-line-at-end-of-file: enable
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off']
+  comments:
+    min-spaces-from-content: 1

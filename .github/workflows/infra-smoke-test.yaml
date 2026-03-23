@@ -1,0 +1,148 @@
+---
+name: infra-smoke-test
+
+on:
+  schedule:
+    # 03:00 UTC = 04:00 CET. Validates Layer 1 Terraform daily.
+    - cron: '0 3 * * *'
+  workflow_dispatch: {}
+
+# Queue smoke tests; never cancel a running one (orphaned resources).
+concurrency:
+  group: infra-smoke-test
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  TF_DIR: terraform/modules/hetzner-k3s
+  # Unique cluster name per run prevents state collisions in Object Storage.
+  CLUSTER_NAME: ci-smoke-${{ github.run_id }}
+
+jobs:
+  # ── 1. Provision ───────────────────────────────────────────────────────────
+  provision:
+    runs-on: ubuntu-latest
+    outputs:
+      server_ip: ${{ steps.apply.outputs.server_ip }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef032 # v3.1.2
+        with:
+          terraform_wrapper: false
+      - name: Write SSH key
+        run: |
+          install -m 600 /dev/null /tmp/ci_ssh_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ci_ssh_key
+      - name: Terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+        run: |
+          terraform -chdir="${TF_DIR}" init \
+            -backend-config="key=${CLUSTER_NAME}/terraform.tfstate"
+      - name: Terraform apply
+        id: apply
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+          TF_VAR_cluster_name: ${{ env.CLUSTER_NAME }}
+          TF_VAR_location: fsn1
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_ssh_private_key_path: /tmp/ci_ssh_key
+        run: |
+          terraform -chdir="${TF_DIR}" apply -auto-approve
+          SERVER_IP=$(terraform -chdir="${TF_DIR}" output -raw server_ip)
+          echo "server_ip=${SERVER_IP}" >> "$GITHUB_OUTPUT"
+      - name: Export kubeconfig
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+        run: |
+          terraform -chdir="${TF_DIR}" output -raw kubeconfig \
+            | base64 > /tmp/kubeconfig.b64
+      - name: Upload kubeconfig artifact
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        with:
+          name: smoke-kubeconfig-${{ github.run_id }}
+          path: /tmp/kubeconfig.b64
+          retention-days: 1
+
+  # ── 2. Bootstrap ───────────────────────────────────────────────────────────
+  bootstrap:
+    needs: provision
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/download-artifact@65462800fd760344b1a397b39ab51d1feac5012d # v4.1.7
+        with:
+          name: smoke-kubeconfig-${{ github.run_id }}
+          path: /tmp
+      - name: Decode kubeconfig
+        run: base64 -d /tmp/kubeconfig.b64 > /tmp/kubeconfig
+      - name: Write SSH key
+        run: |
+          install -m 600 /dev/null /tmp/ci_ssh_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ci_ssh_key
+      - name: Bootstrap cluster
+        env:
+          KUBECONFIG: /tmp/kubeconfig
+        run: bash script/bootstrap-cluster.sh
+
+  # ── 3. Verify ──────────────────────────────────────────────────────────────
+  verify:
+    needs: bootstrap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/download-artifact@65462800fd760344b1a397b39ab51d1feac5012d # v4.1.7
+        with:
+          name: smoke-kubeconfig-${{ github.run_id }}
+          path: /tmp
+      - name: Decode kubeconfig
+        run: base64 -d /tmp/kubeconfig.b64 > /tmp/kubeconfig
+      - name: Install kubectl
+        run: |
+          KUBECTL_VERSION=$(curl -sfL https://dl.k8s.io/release/stable.txt)
+          curl -sfLo /usr/local/bin/kubectl \
+            "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          chmod +x /usr/local/bin/kubectl
+      - name: Verify platform
+        env:
+          KUBECONFIG: /tmp/kubeconfig
+        run: bash script/verify-platform.sh
+
+  # ── 4. Destroy (always runs) ───────────────────────────────────────────────
+  destroy:
+    needs: [provision, bootstrap, verify]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef032 # v3.1.2
+        with:
+          terraform_wrapper: false
+      - name: Write SSH key
+        run: |
+          install -m 600 /dev/null /tmp/ci_ssh_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ci_ssh_key
+      - name: Terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+        run: |
+          terraform -chdir="${TF_DIR}" init \
+            -backend-config="key=${CLUSTER_NAME}/terraform.tfstate"
+      - name: Terraform destroy
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+          TF_VAR_cluster_name: ${{ env.CLUSTER_NAME }}
+          TF_VAR_location: fsn1
+          TF_VAR_ssh_public_key: placeholder
+          TF_VAR_ssh_private_key_path: /tmp/ci_ssh_key
+        run: terraform -chdir="${TF_DIR}" destroy -auto-approve

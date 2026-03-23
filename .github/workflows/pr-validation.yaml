@@ -1,0 +1,176 @@
+---
+name: pr-validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Detect which paths changed so unrelated jobs can be skipped.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      terraform: ${{ steps.filter.outputs.terraform }}
+      yaml: ${{ steps.filter.outputs.yaml }}
+      shell: ${{ steps.filter.outputs.shell }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: dorny/paths-filter@de90cc6fb38505f5d1bcf7faa5c7ae498e6c83b5 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            terraform:
+              - 'terraform/**'
+            yaml:
+              - '**/*.yaml'
+              - '**/*.yml'
+            shell:
+              - 'script/**/*.sh'
+              - '.github/**/*.sh'
+
+  # ── Terraform ──────────────────────────────────────────────────────────────
+
+  terraform-fmt:
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef032 # v3.1.2
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive ./terraform
+
+  terraform-validate:
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef032 # v3.1.2
+      - name: Validate hetzner-k3s module
+        run: |
+          terraform -chdir=terraform/modules/hetzner-k3s init -backend=false
+          terraform -chdir=terraform/modules/hetzner-k3s validate
+      - name: Validate shared/dns module
+        run: |
+          terraform -chdir=terraform/modules/shared/dns init -backend=false
+          terraform -chdir=terraform/modules/shared/dns validate
+      - name: Validate shared/storage module
+        run: |
+          terraform -chdir=terraform/modules/shared/storage init -backend=false
+          terraform -chdir=terraform/modules/shared/storage validate
+
+  terraform-plan:
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef032 # v3.1.2
+        with:
+          terraform_wrapper: false
+      - name: Prepare SSH key placeholder
+        # A placeholder key is used so terraform validate/plan can parse the
+        # configuration without requiring a real key on disk.
+        run: |
+          install -m 600 /dev/null /tmp/ci_ssh_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ci_ssh_key
+      - name: Terraform init (hetzner-k3s)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+        run: terraform -chdir=terraform/modules/hetzner-k3s init
+      - name: Terraform plan (hetzner-k3s)
+        id: plan
+        continue-on-error: true
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+          TF_VAR_cluster_name: ci-plan
+          TF_VAR_location: fsn1
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_ssh_private_key_path: /tmp/ci_ssh_key
+        run: |
+          terraform -chdir=terraform/modules/hetzner-k3s plan \
+            -detailed-exitcode \
+            -no-color \
+            2>&1 | tee /tmp/plan.txt
+          # exit 0 = no changes, exit 2 = changes detected (both are success)
+          EXIT="${PIPESTATUS[0]}"
+          [ "$EXIT" -eq 1 ] && exit 1 || exit 0
+      - name: Post plan as PR comment
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const raw = fs.existsSync('/tmp/plan.txt')
+              ? fs.readFileSync('/tmp/plan.txt', 'utf8')
+              : '(plan output not available)';
+            const plan = raw.length > 60000
+              ? raw.slice(0, 60000) + '\n...(truncated)'
+              : raw;
+            const outcome = '${{ steps.plan.outcome }}';
+            const icon = outcome === 'success' ? '✅' : '❌';
+            const body = [
+              `## ${icon} Terraform Plan — hetzner-k3s`,
+              '',
+              `**Result:** \`${outcome}\``,
+              '',
+              '<details><summary>Plan output</summary>',
+              '',
+              '```hcl',
+              plan,
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+            if (outcome === 'failure') {
+              core.setFailed('Terraform plan failed — see comment above');
+            }
+
+  # ── YAML ───────────────────────────────────────────────────────────────────
+
+  yaml-lint:
+    needs: changes
+    if: needs.changes.outputs.yaml == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install yamllint
+        run: pip install yamllint
+      - name: Lint YAML files
+        run: yamllint -c .yamllint.yaml .
+
+  # ── Shell ──────────────────────────────────────────────────────────────────
+
+  shellcheck:
+    needs: changes
+    if: needs.changes.outputs.shell == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+      - name: Run shellcheck
+        run: |
+          find script/ .github/ -name '*.sh' -print0 \
+            | xargs -0 shellcheck --severity=warning

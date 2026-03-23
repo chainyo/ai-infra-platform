@@ -1,22 +1,22 @@
 ## 1. Repository Foundations
 
-- [ ] 1.1 Add `.yamllint.yaml` config file to the repo root with project-standard rules (2-space indent, 120-char line limit, no trailing spaces)
-- [ ] 1.2 Create `.github/` directory structure: `workflows/` and `actions/` subdirectories
-- [ ] 1.3 Document required GitHub secrets in `docs/runbooks/ci-secrets.md`: `HCLOUD_TOKEN`, `SSH_PRIVATE_KEY`, `HZ_OBJECT_STORAGE_ACCESS_KEY`, `HZ_OBJECT_STORAGE_SECRET_KEY`
-- [ ] 1.4 Create Terraform backend config for Hetzner Object Storage in `terraform/hetzner-k3s/backend.tf`
+- [x] 1.1 Add `.yamllint.yaml` config file to the repo root with project-standard rules (2-space indent, 120-char line limit, no trailing spaces)
+- [x] 1.2 Create `.github/` directory structure: `workflows/` and `actions/` subdirectories
+- [x] 1.3 Document required GitHub secrets in `docs/runbooks/ci-secrets.md`: `HCLOUD_TOKEN`, `SSH_PRIVATE_KEY`, `HZ_OBJECT_STORAGE_ACCESS_KEY`, `HZ_OBJECT_STORAGE_SECRET_KEY`
+- [x] 1.4 Create Terraform backend config for Hetzner Object Storage in `terraform/hetzner-k3s/backend.tf`
 
 ## 2. PR Validation Workflow
 
-- [ ] 2.1 Create `.github/workflows/pr-validation.yaml` with job triggers: `pull_request` on `opened`, `synchronize`, `reopened`
-- [ ] 2.2 Add `terraform-fmt` job: checkout, setup Terraform, run `terraform fmt -check -recursive ./terraform`
-- [ ] 2.3 Add `terraform-validate` job: init each changed module directory, run `terraform validate`, triggered only when `terraform/**` paths change
-- [ ] 2.4 Add `terraform-plan` job: run `terraform plan -detailed-exitcode` for changed Layer 1 modules, post plan output as PR comment using `github-script`
-- [ ] 2.5 Add `yaml-lint` job: install `yamllint`, run against all changed `.yaml`/`.yml` files using `yamllint -c .yamllint.yaml`
+- [x] 2.1 Create `.github/workflows/pr-validation.yaml` with job triggers: `pull_request` on `opened`, `synchronize`, `reopened`
+- [x] 2.2 Add `terraform-fmt` job: checkout, setup Terraform, run `terraform fmt -check -recursive ./terraform`
+- [x] 2.3 Add `terraform-validate` job: init each changed module directory, run `terraform validate`, triggered only when `terraform/**` paths change
+- [x] 2.4 Add `terraform-plan` job: run `terraform plan -detailed-exitcode` for changed Layer 1 modules, post plan output as PR comment using `github-script`
+- [x] 2.5 Add `yaml-lint` job: install `yamllint`, run against all changed `.yaml`/`.yml` files using `yamllint -c .yamllint.yaml`
 - [ ] 2.6 Add `k8s-validate` job: install `kubeconform`, run against changed manifests under `platform/`, `clusters/`, `apps/` with pinned Kubernetes schema version
-- [ ] 2.7 Add `shellcheck` job: install `shellcheck`, run against all changed `.sh` files under `script/` and `.github/`
-- [ ] 2.8 Add `paths` filters to each job so unrelated changes skip the relevant jobs
-- [ ] 2.9 Add `concurrency` group with `cancel-in-progress: true` scoped to the PR number
-- [ ] 2.10 Pin all third-party actions used in this workflow to full commit SHA
+- [x] 2.7 Add `shellcheck` job: install `shellcheck`, run against all changed `.sh` files under `script/` and `.github/`
+- [x] 2.8 Add `paths` filters to each job so unrelated changes skip the relevant jobs
+- [x] 2.9 Add `concurrency` group with `cancel-in-progress: true` scoped to the PR number
+- [x] 2.10 Pin all third-party actions used in this workflow to full commit SHA
 
 ## 3. Live Deploy Workflow (push to main)
 
@@ -30,36 +30,36 @@
 
 ## 4. Infra Smoke Test Workflow (daily cron)
 
-- [ ] 4.1 Create `.github/workflows/infra-smoke-test.yaml` with trigger: `schedule: cron: '0 3 * * *'` (03:00 UTC = 04:00 CET)
-- [ ] 4.2 Add `provision` job: `terraform init` (Hetzner Object Storage backend), `terraform apply -auto-approve`, capture kubeconfig output
-- [ ] 4.3 Add `bootstrap` job (depends on `provision`): run `script/bootstrap-cluster.sh` with kubeconfig from previous job, wait for ArgoCD sync
-- [ ] 4.4 Add `verify` job (depends on `bootstrap`): run `script/verify-platform.sh` against the ephemeral cluster
-- [ ] 4.5 Add `destroy` job: `terraform destroy -auto-approve` with `if: always()` to ensure cleanup on success and failure
-- [ ] 4.6 Create `script/verify-platform.sh` if it does not exist: check all expected pods are Running, ArgoCD Applications are Synced+Healthy
-- [ ] 4.7 Pin all third-party actions to full commit SHA
+- [x] 4.1 Create `.github/workflows/infra-smoke-test.yaml` with trigger: `schedule: cron: '0 3 * * *'` (03:00 UTC = 04:00 CET)
+- [x] 4.2 Add `provision` job: `terraform init` (Hetzner Object Storage backend), `terraform apply -auto-approve`, capture kubeconfig output
+- [x] 4.3 Add `bootstrap` job (depends on `provision`): run `script/bootstrap-cluster.sh` with kubeconfig from previous job, wait for ArgoCD sync
+- [x] 4.4 Add `verify` job (depends on `bootstrap`): run `script/verify-platform.sh` against the ephemeral cluster
+- [x] 4.5 Add `destroy` job: `terraform destroy -auto-approve` with `if: always()` to ensure cleanup on success and failure
+- [x] 4.6 Create `script/verify-platform.sh` if it does not exist: check all expected pods are Running, ArgoCD Applications are Synced+Healthy
+- [x] 4.7 Pin all third-party actions to full commit SHA
 
-- [ ] 5.1 Create `.github/workflows/deploy.yaml` with triggers: `workflow_dispatch` (environment input) and `push` on `v*.*.*` tags
-- [ ] 5.2 Add environment selector input to `workflow_dispatch` with options: `staging`, `production`
-- [ ] 5.3 Add `deploy` job: `terraform init`, `terraform apply -auto-approve` targeting Hetzner Layer 1 module
-- [ ] 5.4 Add `bootstrap` job (depends on `deploy`): invoke `script/bootstrap-cluster.sh` with Terraform kubeconfig output
-- [ ] 5.5 Configure GitHub Environment `production` with required reviewer protection rule
-- [ ] 5.6 Upload masked kubeconfig as GitHub Actions artifact with 1-day TTL using `actions/upload-artifact`
-- [ ] 5.7 Pin all third-party actions to full commit SHA
+- [x] 5.1 Create `.github/workflows/deploy.yaml` with triggers: `workflow_dispatch` (environment input) and `push` on `v*.*.*` tags
+- [x] 5.2 Add environment selector input to `workflow_dispatch` with options: `staging`, `production`
+- [x] 5.3 Add `deploy` job: `terraform init`, `terraform apply -auto-approve` targeting Hetzner Layer 1 module
+- [x] 5.4 Add `bootstrap` job (depends on `deploy`): invoke `script/bootstrap-cluster.sh` with Terraform kubeconfig output
+- [x] 5.5 Configure GitHub Environment `production` with required reviewer protection rule
+- [x] 5.6 Upload masked kubeconfig as GitHub Actions artifact with 1-day TTL using `actions/upload-artifact`
+- [x] 5.7 Pin all third-party actions to full commit SHA
 
 ## 6. Dependency Review Workflow
 
-- [ ] 6.1 Create `.github/workflows/dependency-review.yaml` with trigger: `pull_request` on `opened`, `synchronize`
-- [ ] 6.2 Add `dependency-review` job using `actions/dependency-review-action` pinned to SHA, fail on HIGH+ CVEs
-- [ ] 6.3 Set workflow permissions to `contents: read` only
-- [ ] 6.4 Add a workflow-level check for non-SHA-pinned third-party actions in changed workflow files (grep-based or via `zizmor`)
+- [x] 6.1 Create `.github/workflows/dependency-review.yaml` with trigger: `pull_request` on `opened`, `synchronize`
+- [x] 6.2 Add `dependency-review` job using `actions/dependency-review-action` pinned to SHA, fail on HIGH+ CVEs
+- [x] 6.3 Set workflow permissions to `contents: read` only
+- [x] 6.4 Add a workflow-level check for non-SHA-pinned third-party actions in changed workflow files (grep-based or via `zizmor`)
 
 ## 7. Runbooks
 
-- [ ] 7.1 Create `docs/runbooks/ci-pr-validation.md`: how to read plan output, re-trigger jobs, fix common lint failures
+- [x] 7.1 Create `docs/runbooks/ci-pr-validation.md`: how to read plan output, re-trigger jobs, fix common lint failures
 - [ ] 7.2 Create `docs/runbooks/ci-live-deploy.md`: how the ArgoCD sync + rollback works, how to recover if rollback also fails, how to manually re-trigger
-- [ ] 7.3 Create `docs/runbooks/ci-infra-smoke-test.md`: how to monitor daily runs, check Hetzner for orphaned resources, how to manually trigger
-- [ ] 7.4 Create `docs/runbooks/ci-deploy.md`: step-by-step deploy procedure, how to approve production gate, rollback steps (terraform destroy + re-apply previous tag)
-- [ ] 7.5 Update root `README.md` to add CI status badges and link to the runbooks
+- [x] 7.3 Create `docs/runbooks/ci-infra-smoke-test.md`: how to monitor daily runs, check Hetzner for orphaned resources, how to manually trigger
+- [x] 7.4 Create `docs/runbooks/ci-deploy.md`: step-by-step deploy procedure, how to approve production gate, rollback steps (terraform destroy + re-apply previous tag)
+- [x] 7.5 Update root `README.md` to add CI status badges and link to the runbooks
 
 ## 8. Validation
 

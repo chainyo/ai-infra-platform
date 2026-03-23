@@ -1,0 +1,87 @@
+---
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Apply Layer 1 Terraform ────────────────────────────────────────────────
+  deploy:
+    runs-on: ubuntu-latest
+    # workflow_dispatch selects the environment via input; tag push targets production.
+    environment: ${{ inputs.environment || 'production' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef032 # v3.1.2
+        with:
+          terraform_wrapper: false
+      - name: Write SSH key
+        run: |
+          install -m 600 /dev/null /tmp/deploy_ssh_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/deploy_ssh_key
+      - name: Terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+        run: terraform -chdir=terraform/modules/hetzner-k3s init
+      - name: Terraform apply
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+          # Override via repository variables; fall back to sensible defaults.
+          TF_VAR_cluster_name: ${{ vars.CLUSTER_NAME || 'ai-infra-platform' }}
+          TF_VAR_location: ${{ vars.CLUSTER_LOCATION || 'fsn1' }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_ssh_private_key_path: /tmp/deploy_ssh_key
+        run: terraform -chdir=terraform/modules/hetzner-k3s apply -auto-approve
+      - name: Export kubeconfig
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+        run: |
+          terraform -chdir=terraform/modules/hetzner-k3s output -raw kubeconfig \
+            > /tmp/kubeconfig
+          # Mask sensitive values so they are redacted from all subsequent logs.
+          ENDPOINT=$(grep -o 'server: https://[^ ]*' /tmp/kubeconfig | cut -d' ' -f2 || true)
+          [ -n "$ENDPOINT" ] && echo "::add-mask::${ENDPOINT}"
+      - name: Upload kubeconfig artifact
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        with:
+          name: kubeconfig-${{ github.ref_name }}-${{ github.run_id }}
+          path: /tmp/kubeconfig
+          retention-days: 1
+
+  # ── Bootstrap cluster ──────────────────────────────────────────────────────
+  bootstrap:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/download-artifact@65462800fd760344b1a397b39ab51d1feac5012d # v4.1.7
+        with:
+          name: kubeconfig-${{ github.ref_name }}-${{ github.run_id }}
+          path: /tmp
+      - name: Write SSH key
+        run: |
+          install -m 600 /dev/null /tmp/deploy_ssh_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/deploy_ssh_key
+      - name: Bootstrap cluster
+        env:
+          KUBECONFIG: /tmp/kubeconfig
+        run: bash script/bootstrap-cluster.sh
