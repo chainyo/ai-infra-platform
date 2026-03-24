@@ -66,5 +66,5 @@
 - [x] 8.1 Open a test PR with a deliberately unformatted Terraform file and verify `pr-validation` blocks it
 - [x] 8.2 Merge a passing PR to `main` and verify `live-deploy` syncs ArgoCD successfully
 - [x] 8.3 Manually trigger `infra-smoke-test` and verify end-to-end: provision → bootstrap → verify → destroy
-- [ ] 8.4 Manually trigger the `deploy` workflow and verify it pauses at the production environment gate
+- [x] 8.4 Manually trigger the `deploy` workflow and verify it pauses at the production environment gate
 - [x] 8.5 Confirm no Hetzner resources are orphaned after infra-smoke-test completion (check Hetzner Cloud console)
