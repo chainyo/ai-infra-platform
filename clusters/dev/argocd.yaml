@@ -18,7 +18,7 @@ spec:
     repoURL: https://argoproj.github.io/argo-helm
     chart: argo-cd
     # renovate: chart=argo-cd registryUrl=https://argoproj.github.io/argo-helm
-    targetRevision: "7.8.0"
+    targetRevision: "7.9.1"
     helm:
       releaseName: argo-cd
   destination:
