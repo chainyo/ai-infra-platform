@@ -180,7 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # renovate: datasource=github-releases depName=yannh/kubeconform
-      KUBECONFORM_VERSION: v0.6.7
+      KUBECONFORM_VERSION: v0.7.0
       # Pinned k8s schema version — matches k3s v1.29.x target.
       K8S_SCHEMA_VERSION: 1.29.0
     steps:
