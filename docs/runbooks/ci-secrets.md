@@ -60,11 +60,17 @@ Base64-encoded kubeconfig for the permanent live demo cluster.
 Used by: `live-deploy` workflow (ArgoCD sync).
 _(Not needed until Layer 2 is deployed.)_
 
+If you followed the Hetzner first-deploy runbook, your kubeconfig is typically
+stored at `~/.kube/ai-infra-dev.yaml`.
+
 Encode the file:
 
 ```sh
-base64 -i ~/.kube/live-cluster.yaml | tr -d '\n'
+base64 -i ~/.kube/ai-infra-dev.yaml | tr -d '\n'
 ```
+
+If your kubeconfig is stored at a different path, use that file instead. The
+secret name stays the same: `LIVE_CLUSTER_KUBECONFIG`.
 
 ---
 

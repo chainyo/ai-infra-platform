@@ -45,11 +45,26 @@ jobs:
         env:
           KUBECONFIG: /tmp/kubeconfig
         run: |
-          argocd app sync --all \
-            --wait \
-            --timeout 300 \
-            --port-forward \
-            --port-forward-namespace argocd
+          mapfile -t APPS < <(
+            argocd app list \
+              --port-forward \
+              --port-forward-namespace argocd \
+              -o name
+          )
+
+          if [ "${#APPS[@]}" -eq 0 ]; then
+            echo "::error::No ArgoCD Applications found to sync."
+            exit 1
+          fi
+
+          for app in "${APPS[@]}"; do
+            echo "Syncing ${app}"
+            argocd app sync "${app}" \
+              --wait \
+              --timeout 300 \
+              --port-forward \
+              --port-forward-namespace argocd
+          done
 
       - name: Rollback degraded Applications
         if: failure() && steps.sync.outcome == 'failure'

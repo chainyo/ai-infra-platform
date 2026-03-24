@@ -16,7 +16,7 @@ triggering an ArgoCD sync. No Terraform is involved — Terraform is exercised s
 | Validate kubeconfig | Fails immediately if `LIVE_CLUSTER_KUBECONFIG` is not set |
 | Write kubeconfig | Decodes the secret to `/tmp/kubeconfig` (mode 600) |
 | Install ArgoCD CLI | Downloads the pinned ArgoCD CLI binary |
-| Sync all Applications | `argocd app sync --all --wait --timeout 300` |
+| Sync all Applications | Lists Applications with `argocd app list -o name`, then syncs each one with `argocd app sync <app> --wait --timeout 300` |
 | Rollback (on failure) | Detects degraded Applications and rolls each back to the last healthy revision |
 | Remove kubeconfig | Deletes `/tmp/kubeconfig` — always runs, even on failure |
 
@@ -29,11 +29,13 @@ Expected runtime: **1–3 minutes** (sync) + up to 5 minutes for health checks.
 The `sync` step runs:
 
 ```sh
-argocd app sync --all --wait --timeout 300 \
+argocd app list -o name --port-forward --port-forward-namespace argocd
+# Then, for each application:
+argocd app sync <app> --wait --timeout 300 \
   --port-forward --port-forward-namespace argocd
 ```
 
-- `--all` syncs every Application registered with the ArgoCD instance.
+- `argocd app list -o name` enumerates every Application registered with the ArgoCD instance.
 - `--wait` blocks until all Applications reach `Synced` + `Healthy` (or timeout).
 - `--timeout 300` — if any Application is not Healthy within 5 minutes the step fails.
 - `--port-forward` — connects to ArgoCD via a `kubectl port-forward` tunnel rather than a public URL.
@@ -79,7 +81,7 @@ intervention.
 ### Step 1 — check Application status
 
 ```sh
-export KUBECONFIG=~/.kube/live-cluster.yaml
+export KUBECONFIG=~/.kube/ai-infra-dev.yaml
 argocd app list
 ```
 
