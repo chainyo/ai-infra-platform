@@ -19,6 +19,9 @@ jobs:
     env:
       # renovate: datasource=github-releases depName=argoproj/argo-cd
       ARGOCD_VERSION: v2.14.21
+      ARGOCD_NAMESPACE: argocd
+      ARGOCD_APPLICATION_CONTROLLER_NAME: argo-cd-argocd-application-controller
+      ARGOCD_REPO_SERVER_NAME: argo-cd-argocd-repo-server
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -40,6 +43,20 @@ jobs:
             "https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_VERSION}/argocd-linux-amd64"
           chmod +x /usr/local/bin/argocd
 
+      - name: Install kubectl
+        run: |
+          KUBECTL_VERSION=$(curl -sfL https://dl.k8s.io/release/stable.txt)
+          curl -sfLo /usr/local/bin/kubectl \
+            "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+          chmod +x /usr/local/bin/kubectl
+
+      - name: Configure ArgoCD core access
+        env:
+          KUBECONFIG: /tmp/kubeconfig
+        run: |
+          kubectl config set-context --current --namespace="${ARGOCD_NAMESPACE}"
+          argocd login localhost --core
+
       - name: Sync all ArgoCD Applications
         id: sync
         env:
@@ -47,8 +64,7 @@ jobs:
         run: |
           mapfile -t APPS < <(
             argocd app list \
-              --port-forward \
-              --port-forward-namespace argocd \
+              --core \
               -o name
           )
 
@@ -60,10 +76,9 @@ jobs:
           for app in "${APPS[@]}"; do
             echo "Syncing ${app}"
             argocd app sync "${app}" \
+              --core \
               --wait \
-              --timeout 300 \
-              --port-forward \
-              --port-forward-namespace argocd
+              --timeout 300
           done
 
       - name: Rollback degraded Applications
@@ -74,8 +89,7 @@ jobs:
           echo "Sync failed. Detecting degraded Applications..."
           DEGRADED=$(
             argocd app list \
-              --port-forward \
-              --port-forward-namespace argocd \
+              --core \
               -o json 2>/dev/null \
             | jq -r '.[] | select(.status.health.status == "Degraded") | .metadata.name'
           )
@@ -89,8 +103,7 @@ jobs:
           while IFS= read -r app; do
             echo "Rolling back: $app"
             if ! argocd app rollback "$app" \
-              --port-forward \
-              --port-forward-namespace argocd; then
+              --core; then
               echo "::error::Rollback failed for '$app' — manual recovery required. See docs/runbooks/ci-live-deploy.md"
               ROLLBACK_FAILED=1
             fi
