@@ -1,5 +1,5 @@
 output "kubeconfig" {
-  value       = data.external.kubeconfig.result["kubeconfig"]
+  value=   data.external.kubeconfig.result["kubeconfig"]
   description = "kubeconfig for the provisioned k3s cluster. Use with kubectl and helm. Pass to bootstrap-cluster.sh for GitOps bootstrap."
   sensitive   = true
 }
