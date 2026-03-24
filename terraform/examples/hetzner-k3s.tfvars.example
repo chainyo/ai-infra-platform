@@ -13,7 +13,7 @@
 
 # Name for the server and cluster. Appears as the server name in the Hetzner Cloud console
 # and is used as a prefix for associated resources (e.g. SSH key).
-cluster_name = "ai-infra-dev"
+cluster_name=   "ai-infra-dev"
 
 # Hetzner datacenter region.
 # Available options: nbg1 (Nuremberg, DE), fsn1 (Falkenstein, DE),
