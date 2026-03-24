@@ -8,13 +8,13 @@
 ## What it does
 
 Deploys platform changes (Layers 2–4: clusters, platform, apps) to the permanent live demo cluster by
-triggering an ArgoCD sync. No Terraform is involved — Terraform is exercised separately by the
-`infra-smoke-test` workflow.
+triggering an ArgoCD sync. It reads the live cluster kubeconfig from Terraform state so the workflow
+tracks cluster replacements automatically.
 
 | Step | Purpose |
 |---|---|
-| Validate kubeconfig | Fails immediately if `LIVE_CLUSTER_KUBECONFIG` is not set |
-| Write kubeconfig | Decodes the secret to `/tmp/kubeconfig` (mode 600) |
+| Terraform init | Connects to the production Terraform backend |
+| Export kubeconfig | Reads the live cluster kubeconfig from Terraform state into `/tmp/kubeconfig` |
 | Install ArgoCD CLI | Downloads the pinned ArgoCD CLI binary |
 | Install kubectl | Provides kubeconfig-aware Kubernetes access for Argo CD core mode |
 | Configure core access | Sets the kubeconfig namespace to `argocd`, then runs `argocd login localhost --core` |
@@ -30,8 +30,15 @@ Expected runtime: **1–3 minutes** (sync) + up to 5 minutes for health checks.
 ## How ArgoCD sync works
 
 The workflow uses Argo CD CLI **core mode**, which talks directly to the
-Kubernetes API using the kubeconfig from `LIVE_CLUSTER_KUBECONFIG` instead of
+Kubernetes API using the kubeconfig exported from Terraform state instead of
 opening an Argo CD API session.
+
+It first loads the kubeconfig from the production Terraform state:
+
+```sh
+terraform -chdir=terraform/modules/hetzner-k3s init
+terraform -chdir=terraform/modules/hetzner-k3s output -raw kubeconfig > /tmp/kubeconfig
+```
 
 It first prepares core access:
 
@@ -147,6 +154,7 @@ argocd app set <app-name> --sync-policy automated --core
 
 | Secret | Used by |
 |---|---|
-| `LIVE_CLUSTER_KUBECONFIG` | All steps (cluster access) |
+| `HZ_OBJECT_STORAGE_ACCESS_KEY` | Terraform backend access |
+| `HZ_OBJECT_STORAGE_SECRET_KEY` | Terraform backend access |
 
 See [ci-secrets.md](./ci-secrets.md) for setup instructions.

@@ -17,6 +17,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
+      TF_DIR: terraform/modules/hetzner-k3s
       # renovate: datasource=github-releases depName=argoproj/argo-cd
       ARGOCD_VERSION: v3.3.4
       ARGOCD_NAMESPACE: argocd
@@ -24,18 +25,24 @@ jobs:
       ARGOCD_REPO_SERVER_NAME: argo-cd-argocd-repo-server
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0
+        with:
+          terraform_wrapper: false
 
-      - name: Validate kubeconfig secret is set
-        run: |
-          if [ -z "${{ secrets.LIVE_CLUSTER_KUBECONFIG }}" ]; then
-            echo "::error::LIVE_CLUSTER_KUBECONFIG secret is not configured — see docs/runbooks/ci-secrets.md"
-            exit 1
-          fi
+      - name: Terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
+        run: terraform -chdir="${TF_DIR}" init
 
-      - name: Write kubeconfig
+      - name: Export kubeconfig from Terraform state
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HZ_OBJECT_STORAGE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HZ_OBJECT_STORAGE_SECRET_KEY }}
         run: |
-          install -m 600 /dev/null /tmp/kubeconfig
-          echo "${{ secrets.LIVE_CLUSTER_KUBECONFIG }}" | base64 -d > /tmp/kubeconfig
+          terraform -chdir="${TF_DIR}" output -raw kubeconfig > /tmp/kubeconfig
+          ENDPOINT=$(grep -o 'server: https://[^ ]*' /tmp/kubeconfig | cut -d' ' -f2 || true)
+          [ -n "$ENDPOINT" ] && echo "::add-mask::${ENDPOINT}"
 
       - name: Install ArgoCD CLI
         run: |

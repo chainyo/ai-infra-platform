@@ -320,13 +320,8 @@ Planned examples:
 
 ## Storing the kubeconfig for CI
 
-If you want the `live-deploy` GitHub Actions workflow to target this cluster,
-encode the kubeconfig and add it as a secret:
-
-```sh
-base64 -i ~/.kube/ai-infra-platform.yaml | tr -d '\n'
-# Copy output → GitHub → Settings → Secrets → LIVE_CLUSTER_KUBECONFIG
-```
+The `live-deploy` workflow reads kubeconfig directly from Terraform state, so
+there is no separate kubeconfig secret to maintain in GitHub Actions.
 
 See [ci-secrets.md](./ci-secrets.md) for the full secrets reference.
 
