@@ -22,6 +22,8 @@ ARGOCD_NAMESPACE="argocd"
 ARGOCD_RELEASE="argo-cd"
 ARGOCD_ROLLOUT_TIMEOUT="300s"
 APP_SYNC_TIMEOUT=120
+ARGOCD_SERVER_DEPLOYMENT="${ARGOCD_RELEASE}-argocd-server"
+ARGOCD_APP_CONTROLLER_STATEFULSET="${ARGOCD_RELEASE}-argocd-application-controller"
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -47,13 +49,13 @@ echo ""
 
 # ── 2. Wait for ArgoCD rollout ────────────────────────────────────────────────
 
-echo "==> [2/4] Waiting for argocd-server ..."
-kubectl rollout status deployment/argocd-server \
+echo "==> [2/4] Waiting for ${ARGOCD_SERVER_DEPLOYMENT} ..."
+kubectl rollout status "deployment/${ARGOCD_SERVER_DEPLOYMENT}" \
   -n "${ARGOCD_NAMESPACE}" \
   --timeout="${ARGOCD_ROLLOUT_TIMEOUT}"
 
-echo "    Waiting for argocd-application-controller ..."
-kubectl rollout status statefulset/argocd-application-controller \
+echo "    Waiting for ${ARGOCD_APP_CONTROLLER_STATEFULSET} ..."
+kubectl rollout status "statefulset/${ARGOCD_APP_CONTROLLER_STATEFULSET}" \
   -n "${ARGOCD_NAMESPACE}" \
   --timeout="${ARGOCD_ROLLOUT_TIMEOUT}"
 echo "    ArgoCD healthy."

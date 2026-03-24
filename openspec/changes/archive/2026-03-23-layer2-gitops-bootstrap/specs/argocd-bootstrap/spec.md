@@ -40,7 +40,7 @@ After installing ArgoCD, `script/bootstrap-cluster.sh` SHALL apply the root Argo
 
 ### Requirement: Bootstrap script waits for ArgoCD to be healthy
 
-`script/bootstrap-cluster.sh` SHALL wait for ArgoCD's `argocd-server` deployment and `argocd-application-controller` StatefulSet to reach a ready state before exiting. The wait SHALL time out after 300 seconds and exit non-zero if the timeout is reached.
+`script/bootstrap-cluster.sh` SHALL wait for ArgoCD's `argo-cd-argocd-server` deployment and `argo-cd-argocd-application-controller` StatefulSet to reach a ready state before exiting. The wait SHALL time out after 300 seconds and exit non-zero if the timeout is reached.
 
 #### Scenario: ArgoCD becomes healthy within timeout
 

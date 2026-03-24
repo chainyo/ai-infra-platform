@@ -12,7 +12,7 @@
 
 - [x] 3.1 Rewrite `script/bootstrap-cluster.sh` with a shebang, `set -euo pipefail`, and a guard that checks `KUBECONFIG` is set (exits non-zero with error to stderr if missing)
 - [x] 3.2 Add Helm `argocd` namespace creation and `helm upgrade --install argo-cd oci://ghcr.io/argoproj/argo-helm/argo-cd` with a pinned chart version (`--version`) and `--create-namespace`
-- [x] 3.3 Add `kubectl rollout status deployment/argocd-server -n argocd --timeout=300s` and `kubectl rollout status statefulset/argocd-application-controller -n argocd --timeout=300s` after Helm install
+- [x] 3.3 Add `kubectl rollout status deployment/argo-cd-argocd-server -n argocd --timeout=300s` and `kubectl rollout status statefulset/argo-cd-argocd-application-controller -n argocd --timeout=300s` after Helm install
 - [x] 3.4 Add `kubectl apply -f bootstrap/root-application.yaml` after ArgoCD is healthy
 - [x] 3.5 Verify `shellcheck script/bootstrap-cluster.sh` passes with no errors or warnings
 

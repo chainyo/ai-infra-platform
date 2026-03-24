@@ -152,7 +152,7 @@ The script runs four steps:
 | Step | What happens |
 |---|---|
 | `[1/4]` | Installs ArgoCD via Helm (OCI, chart 7.8.0, `--wait`) |
-| `[2/4]` | Waits for `argocd-server` and `argocd-application-controller` rollout |
+| `[2/4]` | Waits for `argo-cd-argocd-server` and `argo-cd-argocd-application-controller` rollout |
 | `[3/4]` | Applies `bootstrap/root-application.yaml` (App of Apps entry point) |
 | `[4/4]` | Polls until the root Application is `Synced` and `Healthy` (up to 120 s) |
 
@@ -178,10 +178,52 @@ Platform verification passed.
 
 ---
 
-## Using Sealed Secrets
+## Access ArgoCD UI
 
-Once the cluster is up and ArgoCD has synced, the Sealed Secrets controller
-runs in `kube-system` and is ready to use.
+After Layer 2 completes, ArgoCD is running in the cluster but is not exposed
+publicly. Access it from your workstation with a local port-forward:
+
+```sh
+KUBECONFIG=~/.kube/ai-infra-dev.yaml kubectl port-forward \
+  -n argocd svc/argo-cd-argocd-server 8080:443
+```
+
+Then open:
+
+```text
+https://localhost:8080
+```
+
+Your browser will show a certificate warning because ArgoCD is serving a
+self-signed certificate through the tunnel.
+
+Get the initial admin password:
+
+```sh
+KUBECONFIG=~/.kube/ai-infra-dev.yaml kubectl -n argocd \
+  get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d
+echo
+```
+
+Log in with:
+
+- Username: `admin`
+- Password: output of the command above
+
+This gives you access to the first platform UI deployed on the cluster. Later
+layers can expose ArgoCD through ingress if needed.
+
+---
+
+## Optional: Using Sealed Secrets
+
+This is not required for the initial Hetzner bootstrap. The first deploy does
+not create any application secrets in Kubernetes.
+
+Use this only when you later need to commit a Kubernetes `Secret` to git safely
+as a `SealedSecret`. Once the cluster is up and ArgoCD has synced, the Sealed
+Secrets controller runs in `kube-system` and is ready to use.
 
 ### Encrypt a secret
 
@@ -192,7 +234,14 @@ kubeseal --fetch-cert \
   --controller-namespace=kube-system \
   > pub-cert.pem
 
-# Encrypt a plain Secret manifest
+# Create a plain Secret manifest locally (example: secret named app-env in default)
+kubectl create secret generic app-env \
+  --from-literal=EXAMPLE_TOKEN=replace-me \
+  --dry-run=client \
+  -o yaml \
+  > my-secret.yaml
+
+# Encrypt the plain Secret manifest
 kubeseal --cert pub-cert.pem \
   --format yaml \
   -f my-secret.yaml \

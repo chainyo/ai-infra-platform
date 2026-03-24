@@ -23,6 +23,7 @@ first-deploy runbook.
 |---|---|
 | `k9s` | Terminal UI for Kubernetes — faster than `kubectl` for day-to-day ops |
 | `argocd` CLI | Manage ArgoCD Applications without the web UI |
+| `kubeseal` | Encrypt Kubernetes Secrets into `SealedSecret` manifests |
 | `gh` | GitHub CLI — trigger workflows, manage secrets from the terminal |
 
 ---
@@ -51,7 +52,7 @@ python3 --version
 ### 3. Install recommended tools
 
 ```sh
-brew install k9s argocd gh
+brew install k9s argocd kubeseal gh
 ```
 
 ---
@@ -62,7 +63,7 @@ brew install k9s argocd gh
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y git curl unzip ssh python3
+sudo apt-get install -y git curl jq unzip ssh python3
 ```
 
 ### 2. Terraform
@@ -107,6 +108,17 @@ curl -sfLo /usr/local/bin/argocd \
   https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
 chmod +x /usr/local/bin/argocd
 
+# kubeseal CLI
+KUBESEAL_VERSION=$(curl -s https://api.github.com/repos/bitnami-labs/sealed-secrets/tags | jq -r '.[0].name' | cut -c 2-)
+if [ -z "${KUBESEAL_VERSION}" ]; then
+  echo "Failed to fetch the latest kubeseal version" >&2
+  exit 1
+fi
+curl -sfLO "https://github.com/bitnami-labs/sealed-secrets/releases/download/v${KUBESEAL_VERSION}/kubeseal-${KUBESEAL_VERSION}-linux-amd64.tar.gz"
+tar -xzf "kubeseal-${KUBESEAL_VERSION}-linux-amd64.tar.gz" kubeseal
+sudo install -m 755 kubeseal /usr/local/bin/kubeseal
+rm -f kubeseal "kubeseal-${KUBESEAL_VERSION}-linux-amd64.tar.gz"
+
 # GitHub CLI
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
   | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -133,6 +145,7 @@ echo "==> python3"    && python3 --version
 echo ""
 echo "==> k9s (optional)"    && k9s version --short 2>/dev/null || echo "not installed"
 echo "==> argocd (optional)" && argocd version --client --short 2>/dev/null || echo "not installed"
+echo "==> kubeseal (optional)" && kubeseal --version 2>/dev/null || echo "not installed"
 echo "==> gh (optional)"     && gh --version | head -1 2>/dev/null || echo "not installed"
 ```
 

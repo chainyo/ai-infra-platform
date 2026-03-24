@@ -4,6 +4,7 @@
 *secret.yml
 !*sealed-secret.yaml
 !*sealed-secret.yml
+pub-cert.pem
 
 # Terraform
 .terraform/
@@ -20,3 +21,6 @@ override.tf.json
 
 # Env files
 .env
+
+# MacOs
+.DS_STORE
