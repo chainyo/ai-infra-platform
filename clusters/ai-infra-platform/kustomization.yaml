@@ -1,9 +1,9 @@
 ---
-# kustomization.yaml — Dev cluster platform module declarations.
+# kustomization.yaml — ai-infra-platform cluster module declarations.
 #
-# This is the source of truth for the dev cluster. ArgoCD watches this directory
-# via the root Application (bootstrap/root-application.yaml) and reconciles
-# every resource listed here.
+# This is the source of truth for the long-lived ai-infra-platform cluster.
+# ArgoCD watches this directory via the root Application
+# (bootstrap/root-application.yaml) and reconciles every resource listed here.
 #
 # Layer 2: ArgoCD self-management only.
 # Layer 3 platform modules (networking, observability, storage, AI) are added

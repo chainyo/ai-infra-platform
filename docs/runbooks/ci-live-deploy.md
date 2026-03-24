@@ -18,6 +18,7 @@ triggering an ArgoCD sync. No Terraform is involved — Terraform is exercised s
 | Install ArgoCD CLI | Downloads the pinned ArgoCD CLI binary |
 | Install kubectl | Provides kubeconfig-aware Kubernetes access for Argo CD core mode |
 | Configure core access | Sets the kubeconfig namespace to `argocd`, then runs `argocd login localhost --core` |
+| Apply root Application | Re-applies `bootstrap/root-application.yaml` so the live cluster follows the current GitOps entrypoint path |
 | Sync all Applications | Lists Applications with `argocd app list --core -o name`, then runs `argocd app sync <app> --core` followed by `argocd app wait <app> --core --sync --health --timeout 300` |
 | Rollback (on failure) | Detects degraded Applications and rolls each back to the last healthy revision |
 | Remove kubeconfig | Deletes `/tmp/kubeconfig` — always runs, even on failure |
@@ -37,6 +38,7 @@ It first prepares core access:
 ```sh
 kubectl config set-context --current --namespace=argocd
 argocd login localhost --core
+kubectl apply -f bootstrap/root-application.yaml
 ```
 
 Then it syncs each Application:
@@ -49,6 +51,7 @@ argocd app wait <app> --core --sync --health --timeout 300
 ```
 
 - `argocd login localhost --core` configures the CLI to use Kubernetes auth instead of an Argo CD API token.
+- `kubectl apply -f bootstrap/root-application.yaml` keeps the root Application aligned with the repository's current cluster declaration path.
 - `argocd app list --core -o name` enumerates every Application registered with the ArgoCD instance.
 - `argocd app sync <app> --core` starts reconciliation for that Application.
 - `argocd app wait <app> --core --sync --health --timeout 300` blocks until the Application is `Synced` and `Healthy`.
@@ -96,7 +99,7 @@ intervention.
 ### Step 1 — check Application status
 
 ```sh
-export KUBECONFIG=~/.kube/ai-infra-dev.yaml
+export KUBECONFIG=~/.kube/ai-infra-platform.yaml
 kubectl config set-context --current --namespace=argocd
 argocd login localhost --core
 argocd app list --core

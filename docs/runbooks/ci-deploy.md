@@ -1,9 +1,7 @@
 # Runbook: Deploy Workflow
 
 **Workflow file:** `.github/workflows/deploy.yaml`
-**Triggers:**
-- Manual (`workflow_dispatch`) — select environment: `staging` or `production`
-- Semver tag push (`v*.*.*`) — always targets `production`
+**Trigger:** Manual (`workflow_dispatch`) only
 
 ---
 
@@ -21,20 +19,10 @@
 ### Option A — Manual deploy (GitHub UI)
 
 1. Navigate to **Actions → deploy → Run workflow**
-2. Select the target environment: `staging` or `production`
-3. Click **Run workflow**
+2. Click **Run workflow**
 
-For `production`, the workflow pauses at the **environment gate** until a required reviewer approves.
-
-### Option B — Tag-based deploy
-
-```sh
-git tag v1.2.3
-git push origin v1.2.3
-```
-
-This automatically triggers `deploy` targeting the `production` environment.
-The production gate still applies.
+The workflow always targets the `production` environment and pauses at the
+deployment gate until a required reviewer approves.
 
 ---
 
@@ -67,7 +55,8 @@ This is a one-time setup step:
 
 ### Option A — Re-apply a previous tag
 
-If the new deployment is broken, apply the previous known-good Terraform state:
+If the new deployment is broken, re-apply a previously known-good repository
+state manually:
 
 ```sh
 git checkout v1.2.2           # Check out old code
@@ -84,7 +73,7 @@ terraform apply -auto-approve
 ```sh
 cd terraform/modules/hetzner-k3s
 terraform destroy -auto-approve
-# Then push a new tag or trigger workflow_dispatch to re-provision
+# Then trigger the deploy workflow again after the rollback is ready
 ```
 
 ---

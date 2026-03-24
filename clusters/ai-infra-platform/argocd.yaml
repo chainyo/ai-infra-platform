@@ -1,5 +1,5 @@
 ---
-# argocd.yaml — ArgoCD self-management Application.
+# argocd.yaml — ArgoCD self-management Application for ai-infra-platform.
 #
 # Once the root Application (bootstrap/root-application.yaml) is applied,
 # ArgoCD syncs this file and adopts the existing Helm release, managing

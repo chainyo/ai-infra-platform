@@ -89,8 +89,8 @@ cp terraform/examples/hetzner-k3s.tfvars.example terraform/examples/hetzner-k3s.
 Edit `terraform/examples/hetzner-k3s.tfvars`:
 
 ```hcl
-cluster_name     = "ai-infra-dev"           # Unique name in your Hetzner project
-location         = "fsn1"                   # nbg1 · fsn1 · hel1 · ash · sin
+cluster_name     = "ai-infra-platform"      # Unique name in your Hetzner project
+location         = "hel1"                   # nbg1 · fsn1 · hel1 · ash · sin
 ssh_public_key   = "ssh-ed25519 AAAA..."    # cat ~/.ssh/ai-infra.pub
 ssh_private_key_path = "~/.ssh/ai-infra"
 
@@ -111,7 +111,7 @@ ssh_private_key_path = "~/.ssh/ai-infra"
 cd terraform/modules/hetzner-k3s
 
 terraform init \
-  -backend-config="key=ai-infra-dev/terraform.tfstate"
+  -backend-config="key=ai-infra-platform/terraform.tfstate"
 
 terraform apply \
   -var-file=../../examples/hetzner-k3s.tfvars
@@ -122,9 +122,9 @@ Expected duration: **3–6 minutes.**
 ### 1.4 Export the kubeconfig
 
 ```sh
-terraform output -raw kubeconfig > ~/.kube/ai-infra-dev.yaml
-chmod 600 ~/.kube/ai-infra-dev.yaml
-export KUBECONFIG=~/.kube/ai-infra-dev.yaml
+terraform output -raw kubeconfig > ~/.kube/ai-infra-platform.yaml
+chmod 600 ~/.kube/ai-infra-platform.yaml
+export KUBECONFIG=~/.kube/ai-infra-platform.yaml
 ```
 
 Verify:
@@ -132,7 +132,7 @@ Verify:
 ```sh
 kubectl get nodes
 # NAME           STATUS   ROLES                  AGE   VERSION
-# ai-infra-dev   Ready    control-plane,master   2m    v1.31.x+k3s1
+# ai-infra-platform   Ready    control-plane,master   2m    v1.31.x+k3s1
 ```
 
 ---
@@ -144,7 +144,7 @@ Run from the **repository root**:
 ```sh
 cd /path/to/ai-infra-platform
 
-KUBECONFIG=~/.kube/ai-infra-dev.yaml bash script/bootstrap-cluster.sh
+KUBECONFIG=~/.kube/ai-infra-platform.yaml bash script/bootstrap-cluster.sh
 ```
 
 The script runs four steps:
@@ -158,13 +158,13 @@ The script runs four steps:
 
 Expected duration: **4–8 minutes** (image pulls on a fresh node).
 
-When `Bootstrap complete.` is printed, ArgoCD is watching `clusters/dev/` and
+When `Bootstrap complete.` is printed, ArgoCD is watching `clusters/ai-infra-platform/` and
 self-managing its own Helm release via GitOps.
 
 ### Verify Layer 2
 
 ```sh
-KUBECONFIG=~/.kube/ai-infra-dev.yaml bash script/verify-platform.sh
+KUBECONFIG=~/.kube/ai-infra-platform.yaml bash script/verify-platform.sh
 ```
 
 Expected final lines:
@@ -184,7 +184,7 @@ After Layer 2 completes, ArgoCD is running in the cluster but is not exposed
 publicly. Access it from your workstation with a local port-forward:
 
 ```sh
-KUBECONFIG=~/.kube/ai-infra-dev.yaml kubectl port-forward \
+KUBECONFIG=~/.kube/ai-infra-platform.yaml kubectl port-forward \
   -n argocd svc/argo-cd-argocd-server 8080:443
 ```
 
@@ -200,7 +200,7 @@ self-signed certificate through the tunnel.
 Get the initial admin password:
 
 ```sh
-KUBECONFIG=~/.kube/ai-infra-dev.yaml kubectl -n argocd \
+KUBECONFIG=~/.kube/ai-infra-platform.yaml kubectl -n argocd \
   get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d
 echo
@@ -266,9 +266,10 @@ the `SealedSecret`.
 > here as each module is built. This section will be expanded for each module
 > that is enabled.
 
-Layer 3 consists of opt-in platform modules declared in `clusters/dev/` and
-managed by ArgoCD. Modules are activated by adding the corresponding ArgoCD
-Application to `clusters/dev/kustomization.yaml`.
+Layer 3 consists of opt-in platform modules declared in
+`clusters/ai-infra-platform/` and managed by ArgoCD. Modules are activated by
+adding the corresponding ArgoCD Application to
+`clusters/ai-infra-platform/kustomization.yaml`.
 
 Planned core modules (enable in any order after Layer 2):
 
@@ -291,7 +292,7 @@ Planned AI modules (enable after core modules):
 | `argo-workflows` | `platform/ai/argo-workflows/` | ML pipeline orchestration |
 
 To enable a module once implemented, add its Application to
-`clusters/dev/kustomization.yaml` and push to `main`. ArgoCD will reconcile
+`clusters/ai-infra-platform/kustomization.yaml` and push to `main`. ArgoCD will reconcile
 automatically.
 
 ---
@@ -323,7 +324,7 @@ If you want the `live-deploy` GitHub Actions workflow to target this cluster,
 encode the kubeconfig and add it as a secret:
 
 ```sh
-base64 -i ~/.kube/ai-infra-dev.yaml | tr -d '\n'
+base64 -i ~/.kube/ai-infra-platform.yaml | tr -d '\n'
 # Copy output → GitHub → Settings → Secrets → LIVE_CLUSTER_KUBECONFIG
 ```
 
@@ -341,7 +342,7 @@ terraform destroy \
 ```
 
 Deletes the server and SSH key from Hetzner. The state file in Object Storage
-is preserved. To fully clean up, delete `ai-infra-dev/terraform.tfstate` from
+is preserved. To fully clean up, delete `ai-infra-platform/terraform.tfstate` from
 the `terraform-state-ai-infra` bucket.
 
 ---
@@ -390,7 +391,7 @@ Common causes:
 
 ### `verify-platform.sh` step `[6/6]` — `sync=OutOfSync`
 
-A diff was detected between the cluster and `clusters/dev/`. Wait a few seconds
+A diff was detected between the cluster and `clusters/ai-infra-platform/`. Wait a few seconds
 for ArgoCD to auto-reconcile, then re-run verify. To force an immediate sync:
 
 ```sh

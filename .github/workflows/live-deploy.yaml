@@ -57,6 +57,11 @@ jobs:
           kubectl config set-context --current --namespace="${ARGOCD_NAMESPACE}"
           argocd login localhost --core
 
+      - name: Apply root Application
+        env:
+          KUBECONFIG: /tmp/kubeconfig
+        run: kubectl apply -f bootstrap/root-application.yaml
+
       - name: Sync all ArgoCD Applications
         id: sync
         env:

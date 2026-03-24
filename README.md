@@ -228,7 +228,7 @@ Four GitHub Actions workflows cover the full platform lifecycle:
 |---|---|---|
 | [`pr-validation`](.github/workflows/pr-validation.yaml) | PR open / sync | `terraform fmt`, `validate`, `plan` (Layer 1); `yamllint`; `shellcheck` |
 | [`infra-smoke-test`](.github/workflows/infra-smoke-test.yaml) | Daily 03:00 UTC | Provisions a real Hetzner cluster, bootstraps platform, verifies, destroys |
-| [`deploy`](.github/workflows/deploy.yaml) | Manual + semver tag | Applies Layer 1 Terraform and bootstraps a named cluster |
+| [`deploy`](.github/workflows/deploy.yaml) | Manual | Applies Layer 1 Terraform and bootstraps the long-lived cluster |
 | [`dependency-review`](.github/workflows/dependency-review.yaml) | PR open / sync | Audits CVEs and action pin integrity |
 
 If the smoke-test badge is green, the Terraform layer provisions correctly. See the [runbooks](docs/runbooks/) for operating and debugging each workflow.

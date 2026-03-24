@@ -30,7 +30,7 @@ After installing ArgoCD, `script/bootstrap-cluster.sh` SHALL apply the root Argo
 
 - **WHEN** `bootstrap-cluster.sh` completes successfully on a bare cluster
 - **THEN** an ArgoCD Application named `root` exists in the `argocd` namespace
-- **AND** it references `clusters/dev/` in this repository as its source
+- **AND** it references `clusters/ai-infra-platform/` in this repository as its source
 
 #### Scenario: Root Application already exists on re-run
 

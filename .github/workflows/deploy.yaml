@@ -2,18 +2,7 @@
 name: deploy
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        type: choice
-        options:
-          - staging
-          - production
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -22,8 +11,8 @@ jobs:
   # ── Apply Layer 1 Terraform ────────────────────────────────────────────────
   deploy:
     runs-on: ubuntu-latest
-    # workflow_dispatch selects the environment via input; tag push targets production.
-    environment: ${{ inputs.environment || 'production' }}
+    # Single long-lived cluster: all workflow runs target the protected production environment.
+    environment: production
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4.0.0

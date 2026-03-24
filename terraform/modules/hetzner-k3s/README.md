@@ -31,8 +31,8 @@ terraform init
 terraform apply -var-file=../../examples/hetzner-k3s.tfvars
 
 # Retrieve the kubeconfig
-terraform output -raw kubeconfig > ~/.kube/ai-infra-dev.yaml
-kubectl --kubeconfig ~/.kube/ai-infra-dev.yaml get nodes
+terraform output -raw kubeconfig > ~/.kube/ai-infra-platform.yaml
+kubectl --kubeconfig ~/.kube/ai-infra-platform.yaml get nodes
 ```
 
 ---

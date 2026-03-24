@@ -9,7 +9,7 @@ Four workflows cover the full lifecycle:
 | `pr-validation` | PR open/sync | Static validation gate |
 | `live-deploy` | push to `main` | Deploy Layers 2-4 to live demo cluster |
 | `infra-smoke-test` | daily cron 03:00 UTC (04:00 CET) | Full Layer 1 validation: provision → verify → destroy |
-| `deploy` | manual + semver tag | Production provisioning |
+| `deploy` | manual | Production provisioning |
 | `dependency-review` | PR open/sync | Pin audit |
 
 Secrets required: `HCLOUD_TOKEN` (mandatory for smoke-test and deploy), `SSH_PRIVATE_KEY` (cluster access), `TF_API_TOKEN` (optional, Terraform Cloud remote state).
@@ -20,7 +20,7 @@ Secrets required: `HCLOUD_TOKEN` (mandatory for smoke-test and deploy), `SSH_PRI
 - Block merges on Terraform/YAML/Kubernetes/shell errors detected statically.
 - Prove platform correctness on every merge to `main` by deploying to the live demo cluster (Layers 2-4).
 - Prove Layer 1 Terraform correctness daily via a full ephemeral provision → verify → destroy cycle.
-- Provide a one-click / tag-triggered path to deploy Layer 1 + bootstrap.
+- Provide a one-click manual path to deploy Layer 1 + bootstrap.
 - Keep pinned GitHub Actions digests auditable and updated.
 
 **Non-Goals:**
@@ -33,9 +33,9 @@ Secrets required: `HCLOUD_TOKEN` (mandatory for smoke-test and deploy), `SSH_PRI
 
 ### Terraform plan on PRs, apply only on deploy
 
-**Decision**: `pr-validation` runs `terraform plan` (read-only), never `apply`. The `deploy` workflow is the only path to `apply`.
+**Decision**: `pr-validation` runs `terraform plan` (read-only), never `apply`. The manual `deploy` workflow is the only path to `apply`.
 
-**Rationale**: `plan` catches drift and config errors without mutating real infrastructure. Applying on every PR would be expensive and dangerous. A separate `deploy` workflow with `workflow_dispatch` + tag trigger gives explicit human intent.
+**Rationale**: `plan` catches drift and config errors without mutating real infrastructure. Applying on every PR would be expensive and dangerous. A separate manual `deploy` workflow gives explicit human intent.
 
 **Alternative considered**: Terraform Cloud run triggers on PR — rejected because it couples CI to a paid service and adds latency without adding value over local `plan`.
 
@@ -87,7 +87,7 @@ Secrets required: `HCLOUD_TOKEN` (mandatory for smoke-test and deploy), `SSH_PRI
 2. Create Hetzner Object Storage bucket for Terraform state (`terraform-state-ai-infra`).
 3. Merge workflow files — `pr-validation` activates immediately on next PR.
 4. Merge `smoke-test` — activates on next push to `main`.
-5. Tag `v0.1.0` to trigger first `deploy` run and verify end-to-end.
+5. Trigger the first manual `deploy` run and verify end-to-end.
 6. Add runbook docs and link from main README.
 
 Rollback: disable individual workflows via GitHub UI; no infrastructure is created until `deploy` runs explicitly.

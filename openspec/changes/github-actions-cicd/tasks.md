@@ -38,8 +38,8 @@
 - [x] 4.6 Create `script/verify-platform.sh` if it does not exist: check all expected pods are Running, ArgoCD Applications are Synced+Healthy
 - [x] 4.7 Pin all third-party actions to full commit SHA
 
-- [x] 5.1 Create `.github/workflows/deploy.yaml` with triggers: `workflow_dispatch` (environment input) and `push` on `v*.*.*` tags
-- [x] 5.2 Add environment selector input to `workflow_dispatch` with options: `staging`, `production`
+- [x] 5.1 Create `.github/workflows/deploy.yaml` with a `workflow_dispatch` trigger for the long-lived cluster
+- [x] 5.2 Gate the deploy job with the `production` GitHub Environment
 - [x] 5.3 Add `deploy` job: `terraform init`, `terraform apply -auto-approve` targeting Hetzner Layer 1 module
 - [x] 5.4 Add `bootstrap` job (depends on `deploy`): invoke `script/bootstrap-cluster.sh` with Terraform kubeconfig output
 - [x] 5.5 Configure GitHub Environment `production` with required reviewer protection rule
@@ -66,5 +66,5 @@
 - [x] 8.1 Open a test PR with a deliberately unformatted Terraform file and verify `pr-validation` blocks it
 - [x] 8.2 Merge a passing PR to `main` and verify `live-deploy` syncs ArgoCD successfully
 - [x] 8.3 Manually trigger `infra-smoke-test` and verify end-to-end: provision → bootstrap → verify → destroy
-- [ ] 8.4 Push a `v0.1.0` tag and verify the `deploy` workflow triggers and pauses at the production environment gate
+- [ ] 8.4 Manually trigger the `deploy` workflow and verify it pauses at the production environment gate
 - [x] 8.5 Confirm no Hetzner resources are orphaned after infra-smoke-test completion (check Hetzner Cloud console)

@@ -6,33 +6,33 @@ The `clusters/` directory SHALL use a Kustomize base/overlay structure. Each clu
 
 #### Scenario: Valid dev cluster kustomization
 
-- **WHEN** `kubectl kustomize clusters/dev/` is executed
+- **WHEN** `kubectl kustomize clusters/ai-infra-platform/` is executed
 - **THEN** it produces valid Kubernetes manifest YAML with no errors
 
 #### Scenario: New cluster inherits from dev base
 
-- **WHEN** a new `clusters/prod/` overlay is created that extends `clusters/dev/`
+- **WHEN** a new `clusters/prod/` overlay is created that extends `clusters/ai-infra-platform/`
 - **THEN** it can override individual resource values without duplicating the base declarations
 
 ### Requirement: Dev cluster activates only the gitops module at Layer 2
 
-The `clusters/dev/kustomization.yaml` SHALL reference only the ArgoCD (gitops) module at Layer 2 completion. It SHALL NOT reference any Layer 3 platform modules (networking, observability, storage, AI tooling). Layer 3 modules are added to `clusters/dev/` as part of their own implementation changes.
+The `clusters/ai-infra-platform/kustomization.yaml` SHALL reference only the ArgoCD (gitops) module at Layer 2 completion. It SHALL NOT reference any Layer 3 platform modules (networking, observability, storage, AI tooling). Layer 3 modules are added to `clusters/ai-infra-platform/` as part of their own implementation changes.
 
 #### Scenario: Dev cluster resources at Layer 2 completion
 
-- **WHEN** the `clusters/dev/` directory is inspected after Layer 2 is implemented
+- **WHEN** the `clusters/ai-infra-platform/` directory is inspected after Layer 2 is implemented
 - **THEN** it contains an ArgoCD Application pointing to the gitops platform module (or a self-referential ArgoCD configuration)
 - **AND** it does NOT contain references to networking, observability, storage, or AI modules
 
 ### Requirement: Root Application manifest is stored in bootstrap/
 
-The `bootstrap/` directory SHALL contain `root-application.yaml`, an ArgoCD `Application` manifest that points to `clusters/dev/` as the source of truth for the dev cluster. This manifest SHALL be applied by the bootstrap script and SHALL NOT be managed by ArgoCD itself (it is the entry point for GitOps, not a product of it).
+The `bootstrap/` directory SHALL contain `root-application.yaml`, an ArgoCD `Application` manifest that points to `clusters/ai-infra-platform/` as the source of truth for the ai-infra-platform cluster. This manifest SHALL be applied by the bootstrap script and SHALL NOT be managed by ArgoCD itself (it is the entry point for GitOps, not a product of it).
 
 #### Scenario: Root Application references correct repository and path
 
 - **WHEN** `bootstrap/root-application.yaml` is inspected
 - **THEN** `spec.source.repoURL` points to the canonical HTTPS URL of this repository
-- **AND** `spec.source.path` is `clusters/dev`
+- **AND** `spec.source.path` is `clusters/ai-infra-platform`
 - **AND** `spec.destination.server` is `https://kubernetes.default.svc` (in-cluster)
 - **AND** `spec.destination.namespace` is `argocd`
 

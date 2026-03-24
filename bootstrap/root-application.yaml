@@ -2,10 +2,10 @@
 # root-application.yaml — The ArgoCD App of Apps entry point.
 #
 # Applied ONCE by script/bootstrap-cluster.sh after ArgoCD is installed.
-# This Application tells ArgoCD to watch clusters/dev/ and manage everything
+# This Application tells ArgoCD to watch clusters/ai-infra-platform/ and manage everything
 # declared there. It is NOT managed by ArgoCD itself (chicken-and-egg).
 #
-# All subsequent platform resources are declared under clusters/dev/.
+# All subsequent platform resources are declared under clusters/ai-infra-platform/.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -16,7 +16,7 @@ spec:
   source:
     repoURL: https://github.com/chainyo/ai-infra-platform
     targetRevision: HEAD
-    path: clusters/dev
+    path: clusters/ai-infra-platform
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
