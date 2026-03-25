@@ -36,7 +36,9 @@ jobs:
             k8s:
               - 'platform/**'
               - 'clusters/**'
+              - 'apps/**'
             shell:
+              - 'script/**/*.sh'
               - '.github/**/*.sh'
             renovate:
               - 'renovate.json'
@@ -121,7 +123,7 @@ jobs:
           [ "$EXIT" -eq 1 ] && exit 1 || exit 0
       - name: Post plan as PR comment
         if: always()
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -191,7 +193,7 @@ jobs:
           chmod +x /usr/local/bin/kubeconform
       - name: Validate Kubernetes manifests
         run: |
-          find platform/ clusters/ -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null \
+          find platform/ clusters/ apps/ -name '*.yaml' -o -name '*.yml' 2>/dev/null \
             | xargs -r kubeconform \
                 -strict \
                 -ignore-missing-schemas \
@@ -210,7 +212,7 @@ jobs:
         run: sudo apt-get install -y shellcheck
       - name: Run shellcheck
         run: |
-          find .github/ -type f -name '*.sh' -print0 \
+          find script/ .github/ -name '*.sh' -print0 \
             | xargs -0 shellcheck --severity=warning
 
   # ── Renovate ───────────────────────────────────────────────────────────────
