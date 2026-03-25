@@ -16,9 +16,6 @@
 > Terraform provisions the cluster. ArgoCD owns everything inside it.
 > Enable only the modules you need.
 
-> Operational cluster definitions, deploy/smoke workflows, bootstrap scripts,
-> and runbooks live in the private `platform-delivery` repository.
-
 <br/>
 
 ---
@@ -120,7 +117,8 @@ Enable a module by adding its path. Disable it by removing the line. ArgoCD reco
 
 <img src="./docs/assets/banner-layer3.svg" alt="Layer 3 — platform" width="100%"/>
 
-Self-contained, opt-in Helm-based modules. Every module ships with production-grade default values, Grafana dashboards where applicable, and runbooks in `docs/runbooks/`.
+Self-contained, opt-in Helm-based modules. Every module ships with production-grade
+default values and Grafana dashboards where applicable.
 
 **Core modules**
 
