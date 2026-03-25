@@ -1,7 +1,7 @@
 # Runbook: Infra Drift Check
 
 **Workflow file:** `.github/workflows/infra-drift-check.yaml`  
-**Trigger:** Push to `main`, daily schedule, or manual (`workflow_dispatch`)
+**Trigger:** Daily schedule or manual (`workflow_dispatch`)
 
 ---
 
@@ -25,9 +25,8 @@ The workflow uploads the full plan output as an artifact:
 
 ## When to use it
 
-- After merging Terraform changes to `main`
 - On a schedule, to detect infrastructure drift even when no code changed
-- Before running the manual `deploy` workflow, if you want to confirm whether Layer 1 is out of sync
+- Before running the production deploy workflow manually, if you want to confirm whether Layer 1 is out of sync
 
 ---
 
@@ -40,7 +39,7 @@ do not match.
 
 Typical causes:
 
-- a Terraform change landed in `main` but `deploy` has not been run yet
+- a Terraform change landed in `main` but the production deploy workflow has not run yet
 - repository variables or SSH key inputs changed
 - the long-lived cluster was modified or recreated outside the normal workflow
 
@@ -50,7 +49,7 @@ Recommended action:
 gh workflow run deploy.yaml
 ```
 
-Then verify the new `deploy` run completes successfully.
+Then verify the new `deploy-production` run completes successfully.
 
 ### Terraform error
 
@@ -87,5 +86,6 @@ gh workflow run infra-drift-check.yaml
 | `HZ_OBJECT_STORAGE_SECRET_KEY` | Secret | backend auth |
 | `CLUSTER_NAME` | Variable | target cluster name |
 | `CLUSTER_LOCATION` | Variable | target datacenter |
+| `K3S_VERSION` | Variable | optional version pin |
 
 See [ci-secrets.md](./ci-secrets.md) for setup instructions.

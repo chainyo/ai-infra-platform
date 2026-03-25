@@ -1,7 +1,7 @@
-# Runbook: Deploy Workflow
+# Runbook: Production Deploy Workflow
 
 **Workflow file:** `.github/workflows/deploy.yaml`
-**Trigger:** Manual (`workflow_dispatch`) only
+**Trigger:** Push to `main` and manual (`workflow_dispatch`)
 
 ---
 
@@ -9,16 +9,22 @@
 
 | Job | Depends on | Purpose |
 |---|---|---|
-| `deploy` | — | `terraform apply` for `terraform/modules/hetzner-k3s`, uploads kubeconfig artifact |
-| `bootstrap` | `deploy` | `script/bootstrap-cluster.sh` — installs ArgoCD, applies cluster kustomization |
+| `deploy` | — | Unified production deploy: conditionally applies Terraform, bootstraps if needed, syncs ArgoCD, verifies platform health |
 
 ---
 
 ## Deploy procedure
 
-### Option A — Manual deploy (GitHub UI)
+Every push to `main` triggers the production deploy workflow automatically.
 
-1. Navigate to **Actions → deploy → Run workflow**
+The workflow detects whether `terraform/**` changed:
+
+- If Terraform changed: it runs Layer 1 apply first, then bootstraps the cluster, then syncs ArgoCD and verifies the platform.
+- If Terraform did not change: it skips Layer 1 apply and reconciles the cluster using Terraform state + ArgoCD only.
+
+### Manual deploy (GitHub UI)
+
+1. Navigate to **Actions → deploy-production → Run workflow**
 2. Click **Run workflow**
 
 The workflow always targets the `production` environment and pauses at the
@@ -53,19 +59,14 @@ This is a one-time setup step:
 
 ## Rollback procedure
 
-### Option A — Re-apply a previous tag
+### Option A — Revert and redeploy
 
-If the new deployment is broken, re-apply a previously known-good repository
-state manually:
+If the new deployment is broken, revert the bad commit on `main` and let the
+same workflow reconcile back to the previous state:
 
 ```sh
-git checkout v1.2.2           # Check out old code
-cd terraform/modules/hetzner-k3s
-export HCLOUD_TOKEN=<token>
-export AWS_ACCESS_KEY_ID=<key>
-export AWS_SECRET_ACCESS_KEY=<secret>
-terraform init
-terraform apply -auto-approve
+git revert <bad-commit-sha>
+git push origin main
 ```
 
 ### Option B — Destroy and re-provision
@@ -81,13 +82,13 @@ terraform destroy -auto-approve
 ## Retrieving the kubeconfig after deploy
 
 The `deploy` job uploads the kubeconfig as a GitHub Actions artifact named
-`kubeconfig-<tag>-<run-id>` with a **1-day TTL**.
+`kubeconfig-<ref>-<run-id>` with a **1-day TTL**.
 
 Download via CLI:
 
 ```sh
-gh run list --workflow=deploy.yaml --limit=5       # find the run ID
-gh run download <run-id> --name kubeconfig-<tag>-<run-id>
+gh run list --workflow=deploy.yaml --limit=5       # workflow file
+gh run download <run-id> --name kubeconfig-<ref>-<run-id>
 ```
 
 The cluster API server endpoint is masked in workflow logs — retrieve it from the downloaded file.
@@ -99,11 +100,12 @@ The cluster API server endpoint is masked in workflow logs — retrieve it from 
 | Name | Type | Used by |
 |---|---|---|
 | `HCLOUD_TOKEN` | Secret | `deploy` |
-| `SSH_PRIVATE_KEY` | Secret | `deploy`, `bootstrap` |
+| `SSH_PRIVATE_KEY` | Secret | `deploy` |
 | `SSH_PUBLIC_KEY` | Secret | `deploy` |
-| `HZ_OBJECT_STORAGE_ACCESS_KEY` | Secret | `deploy` (backend) |
-| `HZ_OBJECT_STORAGE_SECRET_KEY` | Secret | `deploy` (backend) |
+| `HZ_OBJECT_STORAGE_ACCESS_KEY` | Secret | `deploy` (backend/state) |
+| `HZ_OBJECT_STORAGE_SECRET_KEY` | Secret | `deploy` (backend/state) |
 | `CLUSTER_NAME` | Variable | `deploy` (default: `ai-infra-platform`) |
 | `CLUSTER_LOCATION` | Variable | `deploy` (default: `hel1`) |
+| `K3S_VERSION` | Variable | Optional version pin passed to Terraform |
 
 See [ci-secrets.md](./ci-secrets.md) for setup instructions.

@@ -7,7 +7,7 @@ All secrets are configured under **Settings → Secrets and variables → Action
 ### `HCLOUD_TOKEN`
 
 Hetzner Cloud API token with **Read & Write** permissions.
-Used by: `pr-validation` (plan), `infra-smoke-test`, `deploy`.
+Used by: `pr-validation` (plan), `infra-smoke-test`, `deploy`, `infra-drift-check`.
 
 Create at: <https://console.hetzner.cloud/> → Project → Security → API Tokens.
 Scope the token to a dedicated CI project to limit blast radius.
@@ -18,7 +18,7 @@ Scope the token to a dedicated CI project to limit blast radius.
 
 ED25519 or RSA private key in PEM format — full contents including the
 `-----BEGIN OPENSSH PRIVATE KEY-----` header and footer.
-Used by: `infra-smoke-test` (kubeconfig retrieval), `deploy` (kubeconfig retrieval).
+Used by: `infra-smoke-test`, `deploy`, `infra-drift-check`.
 
 Generate a dedicated CI key:
 
@@ -32,7 +32,7 @@ ssh-keygen -t ed25519 -C "ci@ai-infra-platform" -N "" -f ~/.ssh/ci_key
 
 The public key counterpart to `SSH_PRIVATE_KEY` (single line, e.g.
 `ssh-ed25519 AAAA... ci@ai-infra-platform`).
-Used by: `infra-smoke-test`, `deploy` — deployed to the Hetzner server as an authorised key.
+Used by: `infra-smoke-test`, `deploy`, `infra-drift-check` — deployed to the Hetzner server as an authorised key.
 
 This is the content of `~/.ssh/ci_key.pub` from the key generated above.
 
@@ -41,7 +41,7 @@ This is the content of `~/.ssh/ci_key.pub` from the key generated above.
 ### `HZ_OBJECT_STORAGE_ACCESS_KEY`
 
 Hetzner Object Storage S3-compatible access key.
-Used by: `pr-validation`, `infra-smoke-test`, `deploy`, `live-deploy`, `infra-drift-check` (S3 backend auth).
+Used by: `pr-validation`, `infra-smoke-test`, `deploy`, `infra-drift-check` (S3 backend auth).
 
 Create at: <https://console.hetzner.cloud/> → Object Storage → Access Keys → Generate key.
 
@@ -60,8 +60,9 @@ Configure under **Settings → Secrets and variables → Actions → Variables**
 
 | Variable | Default | Description |
 |---|---|---|
-| `CLUSTER_NAME` | `ai-infra-platform` | Hetzner server name for the `deploy` workflow |
+| `CLUSTER_NAME` | `ai-infra-platform` | Hetzner server name for production workflows |
 | `CLUSTER_LOCATION` | `hel1` | Hetzner datacenter (e.g. `nbg1`, `fsn1`, `hel1`) |
+| `K3S_VERSION` | empty | Optional k3s version pin passed to Terraform |
 
 ---
 

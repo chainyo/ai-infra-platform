@@ -12,7 +12,7 @@ The workflow SHALL be triggered by a cron schedule at **03:00 UTC (04:00 CET)** 
 
 #### Scenario: Push to main does not trigger infra smoke test
 - **WHEN** a commit is pushed to `main`
-- **THEN** the infra smoke test workflow SHALL NOT be triggered (only `live-deploy` runs on push to `main`)
+- **THEN** the infra smoke test workflow SHALL NOT be triggered (only the production deploy workflow runs on push to `main`)
 
 ### Requirement: Smoke test provisions a real Hetzner cluster
 The workflow SHALL run `terraform apply` against the Hetzner Layer 1 module using the `HCLOUD_TOKEN` secret, creating a CX22 k3s cluster for the duration of the test run.
@@ -64,4 +64,3 @@ The workflow SHALL configure the Terraform backend to use a Hetzner S3-compatibl
 #### Scenario: State is accessible between apply and destroy jobs
 - **WHEN** the destroy job runs in a separate GitHub Actions job from the apply job
 - **THEN** it SHALL read the Terraform state from Hetzner Object Storage and destroy exactly the resources created by the apply job
-
