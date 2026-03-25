@@ -10,7 +10,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/chainyo/ai-infra-platform
+    repoURL: https://github.com/kubeply/ai-infra-platform
     targetRevision: HEAD
     path: platform/networking/cert-manager/issuers
   destination:
