@@ -1,0 +1,11 @@
+---
+# kustomization.yaml — External Secrets controller plus repo-managed store fixtures.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - application.yaml
+  - namespaces.yaml
+  - kubernetes-store-rbac.yaml
+  - cluster-secret-store.yaml
+  - example-external-secret.yaml

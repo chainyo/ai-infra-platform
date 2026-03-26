@@ -1,0 +1,8 @@
+---
+# kustomization.yaml — Kyverno controller plus baseline audit policies.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - application.yaml
+  - baseline-policies.yaml

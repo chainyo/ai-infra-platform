@@ -1,0 +1,49 @@
+---
+# application.yaml — GitOps-managed External Secrets Operator installation.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    # renovate: datasource=helm depName=external-secrets registryUrl=https://charts.external-secrets.io
+    targetRevision: "2.2.0"
+    helm:
+      releaseName: external-secrets
+      values: |
+        installCRDs: true
+        createOperator: true
+
+        webhook:
+          create: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+
+        certController:
+          create: true
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-secrets
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

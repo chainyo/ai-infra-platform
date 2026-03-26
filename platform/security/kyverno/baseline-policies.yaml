@@ -1,0 +1,127 @@
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged-containers
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    policies.kyverno.io/title: Disallow Privileged Containers
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Privileged mode disables most security mechanisms. Start in audit mode and
+      exclude platform controller namespaces until stricter enforcement is
+      planned deliberately.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: privileged-containers
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - argocd
+                - cert-manager
+                - external-secrets
+                - kube-node-lease
+                - kube-public
+                - kube-system
+                - kyverno
+                - observability
+                - sealed-secrets
+                - traefik
+      validate:
+        message: >-
+          Privileged mode is disallowed. Containers must leave
+          securityContext.privileged unset or set it to false.
+        pattern:
+          spec:
+            "=(ephemeralContainers)":
+              - "=(securityContext)":
+                  "=(privileged)": "false"
+            "=(initContainers)":
+              - "=(securityContext)":
+                  "=(privileged)": "false"
+            containers:
+              - "=(securityContext)":
+                  "=(privileged)": "false"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    policies.kyverno.io/title: Disallow Latest Tag
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Mutable `latest` tags make rollbacks and incident response ambiguous.
+      Audit first and exclude the shared controller namespaces that the
+      reference platform manages itself.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-image-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - argocd
+                - cert-manager
+                - external-secrets
+                - kube-node-lease
+                - kube-public
+                - kube-system
+                - kyverno
+                - observability
+                - sealed-secrets
+                - traefik
+      validate:
+        message: An explicit image tag is required.
+        pattern:
+          spec:
+            containers:
+              - image: "*:*"
+    - name: validate-image-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - argocd
+                - cert-manager
+                - external-secrets
+                - kube-node-lease
+                - kube-public
+                - kube-system
+                - kyverno
+                - observability
+                - sealed-secrets
+                - traefik
+      validate:
+        message: Using the mutable `latest` image tag is not allowed.
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"

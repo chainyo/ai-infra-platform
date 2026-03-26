@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-secrets
+  labels:
+    app.kubernetes.io/part-of: platform-security
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-secrets-demo
+  labels:
+    app.kubernetes.io/part-of: platform-security

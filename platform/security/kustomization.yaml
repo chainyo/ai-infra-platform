@@ -1,0 +1,12 @@
+---
+# kustomization.yaml — platform security module entry point.
+#
+# Clusters opt into Layer 3 security by referencing this directory once.
+# It composes the secret distribution, RBAC, and policy sub-components.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - external-secrets/
+  - rbac/
+  - kyverno/
