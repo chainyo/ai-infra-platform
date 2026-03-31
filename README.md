@@ -211,5 +211,5 @@ ai-infra-platform/
 
 <p align="center">
   <sub>Built and maintained as part of a fractional AI infrastructure service for early-stage startups.<br/>
-  Need this running for your team? <a href="https://your-service-page-url">Learn more →</a></sub>
+  Need this running for your team? <a href="https://cal.eu/kubeply/discovery">Learn more →</a></sub>
 </p>
