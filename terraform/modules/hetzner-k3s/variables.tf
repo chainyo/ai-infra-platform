@@ -19,6 +19,12 @@ variable "ssh_public_key" {
   description = "SSH public key content (e.g. contents of ~/.ssh/id_rsa.pub). Deployed to the server to allow post-provision access."
 }
 
+variable "existing_ssh_key_id" {
+  type        = string
+  default     = ""
+  description = "Existing Hetzner Cloud SSH key ID to attach to the server. When set, the module does not create or destroy an SSH key."
+}
+
 variable "ssh_private_key_path" {
   type        = string
   default     = "~/.ssh/id_rsa"

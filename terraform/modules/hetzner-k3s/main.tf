@@ -4,9 +4,12 @@
 locals {
   # Prepend the version env var only when a specific version is requested.
   k3s_install_env = var.k3s_version != "" ? "INSTALL_K3S_VERSION=${var.k3s_version} " : ""
+  ssh_key_ids     = var.existing_ssh_key_id != "" ? [var.existing_ssh_key_id] : [hcloud_ssh_key.k3s[0].id]
 }
 
 resource "hcloud_ssh_key" "k3s" {
+  count = var.existing_ssh_key_id == "" ? 1 : 0
+
   name       = "${var.cluster_name}-key"
   public_key = var.ssh_public_key
 }
@@ -16,7 +19,7 @@ resource "hcloud_server" "k3s" {
   server_type = var.server_type
   location    = var.location
   image       = "ubuntu-24.04"
-  ssh_keys    = [hcloud_ssh_key.k3s.id]
+  ssh_keys    = local.ssh_key_ids
 
   user_data = <<-EOF
     #!/bin/bash
