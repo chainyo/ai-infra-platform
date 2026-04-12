@@ -45,6 +45,7 @@ kubectl --kubeconfig ~/.kube/ai-infra-platform.yaml get nodes
 | `location` | `string` | required | Hetzner datacenter region. Options: `nbg1`, `fsn1`, `hel1`, `ash`, `sin`. |
 | `server_type` | `string` | `cx33` | Hetzner server type. `cx33` is the default for demo/platform use. Use `cx23` only for smaller dev/CI clusters. |
 | `ssh_public_key` | `string` | required | SSH public key content. Deployed to the server for post-provision access. |
+| `existing_ssh_key_id` | `string` | `""` | Existing Hetzner Cloud SSH key ID to attach to the server. When set, the module reuses that key instead of creating or destroying one. |
 | `ssh_private_key_path` | `string` | `~/.ssh/id_rsa` | Path to the corresponding SSH private key on this machine. Used to retrieve the kubeconfig. |
 | `k3s_version` | `string` | `""` | k3s version to install (e.g. `v1.29.2+k3s1`). Empty = latest stable. |
 
@@ -62,11 +63,12 @@ kubectl --kubeconfig ~/.kube/ai-infra-platform.yaml get nodes
 
 ## How it works
 
-1. An `hcloud_server` is created with Ubuntu 24.04 and a cloud-init script.
-2. Cloud-init installs k3s via the official install script (`https://get.k3s.io`) with `--tls-san <public_ip>` so the API server certificate is valid for remote access.
-3. A `null_resource` SSHs into the server and waits until k3s reports a `Ready` node.
-4. An `external` data source SSHs to the server and reads `/etc/rancher/k3s/k3s.yaml`, replacing `127.0.0.1` with the server's public IP.
-5. The patched kubeconfig is exposed as a sensitive Terraform output.
+1. An SSH key is created unless `existing_ssh_key_id` points at a key that already exists in Hetzner Cloud.
+2. An `hcloud_server` is created with Ubuntu 24.04 and a cloud-init script.
+3. Cloud-init installs k3s via the official install script (`https://get.k3s.io`) with `--tls-san <public_ip>` so the API server certificate is valid for remote access.
+4. A `null_resource` SSHs into the server and waits until k3s reports a `Ready` node.
+5. An `external` data source SSHs to the server and reads `/etc/rancher/k3s/k3s.yaml`, replacing `127.0.0.1` with the server's public IP.
+6. The patched kubeconfig is exposed as a sensitive Terraform output.
 
 **Why output kubeconfig instead of writing a file?**
 Keeping it as an output avoids coupling the module to a filesystem path. The Layer 2 bootstrap script pipes it directly to `kubectl` without leaving files on disk.
