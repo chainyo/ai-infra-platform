@@ -1,0 +1,14 @@
+---
+# scheduled-backup.yaml - PostgreSQL-native scheduled backup.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: app-postgres-daily
+spec:
+  method: plugin
+  schedule: "0 0 2 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: app-postgres
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

@@ -1,0 +1,28 @@
+---
+# barman-cloud-plugin-application.yaml - installs the CloudNativePG backup plugin.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnpg-barman-cloud
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  project: default
+  source:
+    repoURL: https://cloudnative-pg.github.io/charts
+    chart: plugin-barman-cloud
+    # renovate: datasource=helm depName=plugin-barman-cloud registryUrl=https://cloudnative-pg.github.io/charts
+    targetRevision: "0.5.0"
+    helm:
+      releaseName: cnpg-barman-cloud
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpg-system
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

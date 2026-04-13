@@ -1,0 +1,16 @@
+---
+# pooler.yaml - PgBouncer pooler for read/write application traffic.
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: app-postgres-rw
+spec:
+  cluster:
+    name: app-postgres
+  instances: 1
+  type: rw
+  pgbouncer:
+    poolMode: transaction
+    authQuerySecret:
+      name: app-postgres-superuser
+    authQuery: SELECT usename, passwd FROM pg_catalog.pg_shadow WHERE usename=$1

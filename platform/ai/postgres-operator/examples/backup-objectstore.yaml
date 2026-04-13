@@ -1,0 +1,33 @@
+---
+# backup-objectstore.yaml - CloudNativePG Barman Cloud backup destination.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: app-postgres-object-store
+spec:
+  retentionPolicy: "30d"
+  instanceSidecarConfiguration:
+    retentionPolicyIntervalSeconds: 1800
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  configuration:
+    destinationPath: s3://client-postgres-backups/app-postgres/
+    endpointURL: https://s3.example.invalid
+    s3Credentials:
+      accessKeyId:
+        name: postgres-backup-object-store
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: postgres-backup-object-store
+        key: ACCESS_SECRET_KEY
+    wal:
+      compression: gzip
+      maxParallel: 2
+    data:
+      additionalCommandArgs:
+        - --read-timeout=60

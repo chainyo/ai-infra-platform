@@ -1,0 +1,11 @@
+---
+# logical-database.yaml - declarative logical database in an existing cluster.
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: app-reporting
+spec:
+  name: reporting
+  owner: app_readwrite
+  cluster:
+    name: app-postgres
