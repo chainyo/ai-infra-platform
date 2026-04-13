@@ -169,8 +169,8 @@ The public repo stays focused on the reusable platform surface.
 
 This repository is now the public vitrine: reusable Terraform modules, shared
 cluster declarations, platform manifests, and reference assets. The
-operational bootstrap flow lives in the private `platform-delivery`
-repository that consumes this repo as a submodule.
+operational bootstrap flow lives in a private operations repository that
+consumes this repo as a pinned baseline.
 
 ---
 
