@@ -4,8 +4,8 @@
 # Once the root Application is applied, ArgoCD syncs this file and adopts the
 # existing Helm release, managing ArgoCD itself via GitOps going forward.
 #
-# The chart version here must match the version used in
-# platform-delivery/script/bootstrap-cluster.sh (ARGOCD_CHART_VERSION).
+# The chart version here must match the version used by the bootstrap flow that
+# first installs ArgoCD.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
