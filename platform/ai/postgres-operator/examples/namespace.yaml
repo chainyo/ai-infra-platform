@@ -1,0 +1,6 @@
+---
+# namespace.yaml - namespace for the optional PostgreSQL example.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-postgres

@@ -1,0 +1,7 @@
+---
+# kustomization.yaml - optional AI and data service module entrypoints.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Keep this entrypoint empty so clusters opt into individual modules explicitly.
+resources: []

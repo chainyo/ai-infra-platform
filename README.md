@@ -151,9 +151,20 @@ Optional modules for AI workloads. Each is independently opt-in.
 | `ai/gpu/` `🚧` | NVIDIA device plugin, time-slicing config | Any GPU workload |
 | `ai/vllm/` `🚧` | vLLM deployment + autoscaling + OpenAPI spec | LLM inference serving |
 | `ai/qdrant/` `🚧` | Qdrant vector DB + persistence + backup hooks | RAG, semantic search |
-| `ai/postgres-operator/` `🚧` | CloudNativePG + connection pooling + backups | Relational data |
+| `ai/postgres-operator/` | CloudNativePG + PgBouncer + backups | Relational data |
 | `ai/redis/` `🚧` | Redis + Sentinel | Caching, queues |
 | `ai/argo-workflows/` `🚧` | Workflow engine + templates + artifact storage | ML pipelines |
+
+**PostgreSQL**
+
+`platform/ai/postgres-operator/` installs the CloudNativePG operator and the
+Barman Cloud backup plugin with pinned Helm chart versions. It stays optional:
+the public `clusters/acme` baseline does not create client PostgreSQL clusters
+or logical databases by default.
+
+Use the examples under `platform/ai/postgres-operator/examples/` from a
+client-specific entrypoint when a workload needs a database, access role,
+PgBouncer pooler, connection secret, or PostgreSQL-native backup policy.
 
 ---
 
@@ -204,7 +215,7 @@ ai-infra-platform/
 │   ├── observability/
 │   ├── security/
 │   ├── storage/
-│   └── ai/               # 🚧 gpu, vllm, qdrant, postgres, redis, workflows
+│   └── ai/               # optional gpu, vllm, qdrant, postgres, redis, workflows
 ├── .github/workflows/    # public validation and dependency review
 └── docs/assets/          # README visuals
 ```

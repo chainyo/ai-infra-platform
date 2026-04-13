@@ -1,0 +1,16 @@
+---
+# kustomization.yaml - opt-in example PostgreSQL declaration.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: demo-postgres
+
+resources:
+  - namespace.yaml
+  - backup-credentials-externalstore.yaml
+  - access-role-externalstore.yaml
+  - backup-objectstore.yaml
+  - cluster.yaml
+  - logical-database.yaml
+  - pooler.yaml
+  - scheduled-backup.yaml

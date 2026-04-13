@@ -1,0 +1,23 @@
+---
+# restore-cluster.yaml - copy this manifest to restore from an object store.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: app-postgres-restore
+spec:
+  instances: 1
+
+  bootstrap:
+    recovery:
+      source: app-postgres-backup
+
+  externalClusters:
+    - name: app-postgres-backup
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: app-postgres-object-store
+          serverName: app-postgres
+
+  storage:
+    size: 10Gi
